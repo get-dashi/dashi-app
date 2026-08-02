@@ -605,7 +605,7 @@ export default function ListsPage() {
                         </span>
                         <span className="text-[0.55rem] font-bold px-2 py-0.5 rounded-full text-purple-400"
                           style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.2)' }}>
-                          {city === 'austin' ? 'Austin' : city === 'monterrey' ? 'Monterrey' : city === 'nyc' ? 'New York' : city === 'atlanta' ? 'Atlanta' : city === 'dallas' ? 'Dallas' : city === 'miami' ? 'Miami' : city === 'chicago' ? 'Chicago' : city === 'la' ? 'Los Angeles' : city === 'houston' ? 'Houston' : city === 'cdmx' ? 'CDMX' : city}
+                          {city === 'austin' ? 'Austin' : city === 'monterrey' ? 'Monterrey' : city === 'nyc' ? 'New York' : city === 'atlanta' ? 'Atlanta' : city === 'dallas' ? 'Dallas' : city === 'miami' ? 'Miami' : city === 'chicago' ? 'Chicago' : city === 'la' ? 'Los Angeles' : city === 'houston' ? 'Houston' : city === 'cdmx' ? 'CDMX' : city === 'honolulu' ? 'Honolulu' : city === 'kauai' ? "Kaua'i" : city}
                         </span>
                       </div>
                     </div>
