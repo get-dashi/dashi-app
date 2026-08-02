@@ -14,7 +14,7 @@ interface CityData {
   experiences: number
 }
 
-const LIVE_CITIES = new Set(['austin', 'monterrey'])
+const LIVE_CITIES = new Set(['austin', 'monterrey', 'honolulu', 'kauai'])
 
 const CITY_DATA: Record<string, CityData> = {
   austin:    { name: 'Austin, TX',       label: 'ATX',  photo: 'https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=800&q=80', michelin: 18, restaurants: 60, bars: 30, activities: 6,  experiences: 96  },
@@ -27,6 +27,8 @@ const CITY_DATA: Record<string, CityData> = {
   chicago:   { name: 'Chicago, IL',      label: 'CHI',  photo: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=80', michelin: 13, restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
   la:        { name: 'Los Angeles, CA',  label: 'LA',   photo: 'https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=800&q=80', michelin: 14, restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
   houston:   { name: 'Houston, TX',      label: 'HOU',  photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Texas_medical_center.jpg/1280px-Texas_medical_center.jpg', michelin: 0,  restaurants: 13, bars: 3,  activities: 2,  experiences: 18  },
+  honolulu:  { name: 'Honolulu, HI',    label: 'HNL',  photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80', michelin: 3,  restaurants: 10, bars: 5,  activities: 3,  experiences: 15  },
+  kauai:     { name: "Kaua'i, HI",      label: 'KAI',  photo: 'https://images.unsplash.com/photo-1542259009477-d625272157b7?w=800&q=80', michelin: 0,  restaurants: 7,  bars: 3,  activities: 4,  experiences: 10  },
 }
 
 interface CityPickerModalProps {

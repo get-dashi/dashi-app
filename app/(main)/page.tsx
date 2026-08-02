@@ -368,7 +368,7 @@ function ExploreRankItSheet({
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
         <p className="text-[0.88rem] font-black mb-1">Rank &ldquo;{venue.name}&rdquo;</p>
         <p className="text-[0.65rem] text-white/40 mb-4">
-          Choose a position in your Top 10 for {city === 'monterrey' ? 'Monterrey' : 'Austin'}
+          Choose a position in your Top 10 for {city === 'monterrey' ? 'Monterrey' : city === 'honolulu' ? 'Honolulu' : city === 'kauai' ? "Kaua'i" : 'Austin'}
         </p>
         <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto no-scrollbar">
           {Array.from({ length: 10 }, (_, i) => i + 1).map(pos => {
