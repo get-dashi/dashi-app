@@ -7,28 +7,30 @@ interface CityData {
   name: string
   label: string
   photo: string
-  michelin: number
+  michelinStars: number  // 1★ / 2★ / 3★ restaurant count
+  michelinBibs: number   // Bib Gourmand count
+  michelinRec: number    // Recommended (The Plate) count — 2024 cohort; 2025 Austin split TBD
   restaurants: number
   bars: number
   activities: number
   experiences: number
 }
 
-const LIVE_CITIES = new Set(['austin', 'monterrey', 'honolulu', 'kauai'])
+const LIVE_CITIES = new Set(['austin', 'monterrey', 'medellin', 'honolulu', 'kauai'])
+
+// Only these cities are visible in the picker for now (testing phase)
+const VISIBLE_CITIES = new Set(['austin', 'monterrey', 'medellin', 'honolulu', 'kauai'])
 
 const CITY_DATA: Record<string, CityData> = {
-  austin:    { name: 'Austin, TX',       label: 'ATX',  photo: 'https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=800&q=80', michelin: 18, restaurants: 60, bars: 30, activities: 6,  experiences: 96  },
-  nyc:       { name: 'New York, NY',     label: 'NYC',  photo: 'https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80', michelin: 22, restaurants: 30, bars: 10, activities: 5,  experiences: 45  },
-  monterrey: { name: 'Monterrey, MX',    label: 'MTY',  photo: 'https://upload.wikimedia.org/wikipedia/commons/d/de/View_of_Monterrey_%282015%29.jpg', michelin: 7,  restaurants: 50, bars: 18, activities: 5,  experiences: 73  },
-  atlanta:   { name: 'Atlanta, GA',      label: 'ATL',  photo: 'https://images.unsplash.com/photo-1575917649705-5b59aaa12e6b?w=800&q=80', michelin: 8,  restaurants: 28, bars: 10, activities: 2,  experiences: 40  },
-  dallas:    { name: 'Dallas, TX',       label: 'DAL',  photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/View_of_Dallas_from_Reunion_Tower_August_2015_05.jpg/1280px-View_of_Dallas_from_Reunion_Tower_August_2015_05.jpg', michelin: 7,  restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
-  miami:     { name: 'Miami, FL',        label: 'MIA',  photo: 'https://images.unsplash.com/photo-1533106497176-45ae19e68ba2?w=800&q=80', michelin: 9,  restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
-  cdmx:      { name: 'Ciudad de México', label: 'CDMX', photo: 'https://images.unsplash.com/photo-1518659526054-190340b32735?w=800&q=80', michelin: 10, restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
-  chicago:   { name: 'Chicago, IL',      label: 'CHI',  photo: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=80', michelin: 13, restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
-  la:        { name: 'Los Angeles, CA',  label: 'LA',   photo: 'https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=800&q=80', michelin: 14, restaurants: 14, bars: 4,  activities: 2,  experiences: 20  },
-  houston:   { name: 'Houston, TX',      label: 'HOU',  photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Texas_medical_center.jpg/1280px-Texas_medical_center.jpg', michelin: 0,  restaurants: 13, bars: 3,  activities: 2,  experiences: 18  },
-  honolulu:  { name: 'Honolulu, HI',    label: 'HNL',  photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80', michelin: 3,  restaurants: 10, bars: 5,  activities: 3,  experiences: 15  },
-  kauai:     { name: "Kaua'i, HI",      label: 'KAI',  photo: 'https://images.unsplash.com/photo-1542259009477-d625272157b7?w=800&q=80', michelin: 0,  restaurants: 7,  bars: 3,  activities: 4,  experiences: 10  },
+  // Stars: 6 total (3 confirmed), Bibs: 16 total (6 confirmed), Rec: 23 (2024 partial); 2025 Austin additions TBD
+  austin:    { name: 'Austin, TX',       label: 'ATX',  photo: 'https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=800&q=80', michelinStars: 6,  michelinBibs: 16, michelinRec: 23, restaurants: 60, bars: 30, activities: 6,  experiences: 96  },
+  monterrey: { name: 'Monterrey, MX',    label: 'MTY',  photo: 'https://upload.wikimedia.org/wikipedia/commons/d/de/View_of_Monterrey_%282015%29.jpg', michelinStars: 2,  michelinBibs: 3,  michelinRec: 4,  restaurants: 50, bars: 18, activities: 5,  experiences: 73  },
+  // No Michelin Guide in Colombia
+  medellin:  { name: 'Medellín, CO',     label: 'MDE',  photo: 'https://images.unsplash.com/photo-1599413987323-b2b8c0d7d9c8?w=800&q=80', michelinStars: 0,  michelinBibs: 0,  michelinRec: 0,  restaurants: 16, bars: 11, activities: 19, experiences: 66  },
+  // Vintage Cave (2★) + Senia / Omakase by Koroku / Mimi (1★ each) = 4 starred restaurants
+  honolulu:  { name: 'Honolulu, HI',     label: 'HNL',  photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80', michelinStars: 4,  michelinBibs: 3,  michelinRec: 6,  restaurants: 10, bars: 5,  activities: 3,  experiences: 15  },
+  kauai:     { name: "Kaua'i, HI",       label: 'KAI',  photo: 'https://images.unsplash.com/photo-1542259009477-d625272157b7?w=800&q=80', michelinStars: 0,  michelinBibs: 0,  michelinRec: 0,  restaurants: 7,  bars: 3,  activities: 4,  experiences: 10  },
+  // Coming soon cities removed → see lib/cities-archive.ts
 }
 
 interface CityPickerModalProps {
@@ -163,8 +165,11 @@ function CityDetailPanel({ cityKey, city, isLive, onBack, onExplore }: CityDetai
             <span className="text-purple-400">
               <SnowflakeIcon size={18} />
             </span>
-            <span className="text-white font-bold text-lg leading-none">{city.michelin}</span>
+            <span className="text-white font-bold text-lg leading-none">{city.michelinStars + city.michelinBibs}</span>
             <span className="text-white/50 text-[0.6rem] text-center leading-tight">Michelin</span>
+            {(city.michelinStars + city.michelinBibs) > 0 && (
+              <span className="text-white/35 text-[0.52rem] text-center leading-tight">★{city.michelinStars} · Bib {city.michelinBibs}</span>
+            )}
           </div>
           {/* Restaurants */}
           <div className="bg-white/5 rounded-xl p-3 flex flex-col items-center gap-1.5">
@@ -228,7 +233,8 @@ export function CityPickerModal({ isOpen, onClose, currentCity, onCityChange }: 
     }
   }, [isOpen])
 
-  const filteredCities = Object.entries(CITY_DATA).filter(([, data]) =>
+  const filteredCities = Object.entries(CITY_DATA).filter(([key, data]) =>
+    VISIBLE_CITIES.has(key) &&
     data.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -346,10 +352,10 @@ export function CityPickerModal({ isOpen, onClose, currentCity, onCityChange }: 
                 <div className="text-[0.6rem] text-white/60 mt-0.5">
                   {data.experiences.toLocaleString()} Experiences
                 </div>
-                {data.michelin > 0 && (
+                {(data.michelinStars + data.michelinBibs) > 0 && (
                   <div className="flex items-center gap-1 mt-0.5 text-purple-400">
                     <SnowflakeIcon size={9} />
-                    <span className="text-[0.6rem]">{data.michelin} Michelin</span>
+                    <span className="text-[0.6rem]">★{data.michelinStars} · Bib {data.michelinBibs}</span>
                   </div>
                 )}
               </div>

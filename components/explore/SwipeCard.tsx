@@ -75,15 +75,15 @@ export function SwipeCard({ venue, position, venueIndex, style, onRef }: SwipeCa
         PASS
       </div>
 
-      {/* Featured badge */}
-      {venue.featured && !michelinTier && (
+      {/* Featured badge — shows for featured venues unless they have a Star or Bib badge */}
+      {venue.featured && michelinTier !== 'star' && michelinTier !== 'bib' && (
         <div className="absolute top-3.5 left-3.5 z-[15] bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[0.52rem] font-black tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-lg">
           Featured
         </div>
       )}
 
-      {/* Michelin badge */}
-      {michelinTier && (
+      {/* Michelin badge — Star and Bib only; Recommended tier intentionally excluded */}
+      {(michelinTier === 'star' || michelinTier === 'bib') && (
         <div className={`absolute top-3.5 right-3.5 z-[15] flex flex-col items-center rounded-[10px] px-2.5 py-1.5 border ${
           michelinTier === 'star'        ? 'bg-red-900/40 border-red-500/50'
           : michelinTier === 'bib'       ? 'bg-orange-900/35 border-orange-500/40'
