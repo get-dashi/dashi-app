@@ -3,13 +3,15 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
+// Three tabs: Explore / Plans / You
+// Plans = Adventures + Groups merged. You = Profile + saved/passport as rows.
 const tabs = [
   {
     id: 'explore',
     label: 'Explore',
     href: '/',
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? 'url(#ng)' : 'rgba(255,255,255,0.28)'}
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="3 11 22 2 13 21 11 13 3 11"/>
@@ -17,55 +19,26 @@ const tabs = [
     ),
   },
   {
-    id: 'search',
-    label: 'Search',
-    href: '/search',
+    id: 'plans',
+    label: 'Plans',
+    href: '/adventures',
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? 'url(#ng)' : 'rgba(255,255,255,0.28)'}
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
       </svg>
     ),
   },
   {
-    id: 'itinerary',
-    label: 'Lists',
-    href: '/itinerary',
-    icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke={active ? 'url(#ng)' : 'rgba(255,255,255,0.28)'}
-        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="8" y1="6" x2="21" y2="6"/>
-        <line x1="8" y1="12" x2="21" y2="12"/>
-        <line x1="8" y1="18" x2="21" y2="18"/>
-        <line x1="3" y1="6" x2="3.01" y2="6"/>
-        <line x1="3" y1="12" x2="3.01" y2="12"/>
-        <line x1="3" y1="18" x2="3.01" y2="18"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'groups',
-    label: 'Groups',
-    href: '/groups',
-    icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-        stroke={active ? 'url(#ng)' : 'rgba(255,255,255,0.28)'}
-        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    ),
-  },
-  {
-    id: 'profile',
-    label: 'Profile',
+    id: 'you',
+    label: 'You',
     href: '/profile',
     icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? 'url(#ng)' : 'rgba(255,255,255,0.28)'}
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -81,6 +54,8 @@ export function BottomNav() {
 
   const getActive = (href: string) => {
     if (href === '/') return pathname === '/'
+    // Plans tab covers both adventures and groups routes
+    if (href === '/adventures') return pathname.startsWith('/adventures') || pathname.startsWith('/groups')
     return pathname.startsWith(href)
   }
 

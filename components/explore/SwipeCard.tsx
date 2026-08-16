@@ -75,32 +75,52 @@ export function SwipeCard({ venue, position, venueIndex, style, onRef }: SwipeCa
         PASS
       </div>
 
-      {/* Featured badge — shows for featured venues unless they have a Star or Bib badge */}
-      {venue.featured && michelinTier !== 'star' && michelinTier !== 'bib' && (
+      {/* Featured badge */}
+      {venue.featured && !michelinTier && (
         <div className="absolute top-3.5 left-3.5 z-[15] bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[0.52rem] font-black tracking-[0.1em] uppercase px-2.5 py-1.5 rounded-lg">
           Featured
         </div>
       )}
 
-      {/* Michelin badge — Star and Bib only; Recommended tier intentionally excluded */}
-      {(michelinTier === 'star' || michelinTier === 'bib') && (
-        <div className={`absolute top-3.5 right-3.5 z-[15] flex flex-col items-center rounded-[10px] px-2.5 py-1.5 border ${
-          michelinTier === 'star'        ? 'bg-red-900/40 border-red-500/50'
-          : michelinTier === 'bib'       ? 'bg-orange-900/35 border-orange-500/40'
-          :                               'bg-neutral-800/70 border-white/20'
-        }`}>
-          <span className={`font-black leading-none ${
-            michelinTier === 'star'        ? 'text-[0.95rem] text-red-400'
-            : michelinTier === 'bib'       ? 'text-[0.75rem] text-orange-400 italic'
-            :                               'text-[0.65rem] text-white/70'
-          }`}>
-            {michelinTier === 'star' ? '★' : michelinTier === 'bib' ? 'B' : 'M'}
-          </span>
-          <span className="text-[0.38rem] font-black tracking-[0.1em] uppercase text-white/80 mt-0.5 whitespace-nowrap">
-            {michelinTier === 'star' ? 'Michelin' : michelinTier === 'bib' ? 'Bib Gourmand' : 'Recommended'}
-          </span>
+      {/* GF badge */}
+      {venue.glutenFree && (
+        <div className="absolute top-3.5 left-3.5 z-[15] flex flex-col items-center rounded-[10px] px-2.5 py-1.5 border bg-green-900/40 border-green-500/50">
+          <span className="text-[0.75rem] font-black leading-none text-green-400">GF</span>
+          <span className="text-[0.38rem] font-black tracking-[0.1em] uppercase text-white/80 mt-0.5 whitespace-nowrap">Gluten Free</span>
         </div>
       )}
+
+      {/* Michelin badge + optional karaoke chip */}
+      <div className="absolute top-3.5 right-3.5 z-[15] flex flex-col items-end gap-1.5">
+        {michelinTier && (
+          <div className={`flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 border ${
+            michelinTier === 'star'  ? 'bg-red-900/40 border-red-500/50'
+            : michelinTier === 'bib' ? 'bg-orange-900/35 border-orange-500/40'
+            :                          'bg-neutral-800/70 border-white/20'
+          }`}>
+            <span className={`leading-none ${
+              michelinTier === 'star'  ? 'text-[0.8rem] text-red-400'
+              : michelinTier === 'bib' ? 'text-[0.7rem] text-orange-400'
+              :                          'text-[0.6rem] text-white/60'
+            }`}>
+              {michelinTier === 'star' ? '★' : michelinTier === 'bib' ? 'Ⓑ' : '●'}
+            </span>
+            <span className={`text-[0.48rem] font-black tracking-[0.09em] uppercase whitespace-nowrap ${
+              michelinTier === 'star'  ? 'text-red-300'
+              : michelinTier === 'bib' ? 'text-orange-300'
+              :                          'text-white/60'
+            }`}>
+              {michelinTier === 'star' ? 'Michelin Star 2025' : michelinTier === 'bib' ? 'Bib Gourmand 2025' : 'Recommended 2025'}
+            </span>
+          </div>
+        )}
+        {venue.karaoke && (
+          <div className="flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 border bg-purple-900/40 border-purple-500/40">
+            <span className="text-[0.65rem]">🎤</span>
+            <span className="text-[0.48rem] font-black tracking-[0.09em] uppercase text-purple-300 whitespace-nowrap">Karaoke</span>
+          </div>
+        )}
+      </div>
 
       {/* Image */}
       <div className="relative w-full h-[420px]">
@@ -142,9 +162,25 @@ export function SwipeCard({ venue, position, venueIndex, style, onRef }: SwipeCa
             </span>
           </div>
 
-          {/* Description */}
-          {venue.description && (
-            <p className="text-[0.68rem] text-white/55 leading-[1.55] mb-2.5 line-clamp-2">{venue.description}</p>
+          {/* Curator note or nothing — no template strings */}
+          {venue.curatorNote ? (
+            <p className="text-[0.68rem] text-white/55 leading-[1.55] mb-2.5 line-clamp-2">
+              <span className="font-bold text-white/70">Ricky: </span>{venue.curatorNote}
+            </p>
+          ) : null}
+
+          {/* Live status chips */}
+          {venue.liveStatus && venue.liveStatus.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap mb-2.5">
+              {venue.liveStatus.map((chip, i) => (
+                <span
+                  key={i}
+                  className="bg-white/10 backdrop-blur-[6px] rounded-full px-2.5 py-1 text-[0.52rem] font-black tracking-[0.06em] uppercase text-white/80"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
           )}
 
           {/* Happy Hour */}
