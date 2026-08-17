@@ -272,15 +272,10 @@ export default function GroupsPage() {
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
                   >
                     <option value="austin">Austin, TX</option>
-                    <option value="nyc">New York, NY</option>
-                    <option value="chicago">Chicago, IL</option>
-                    <option value="la">Los Angeles, CA</option>
-                    <option value="miami">Miami, FL</option>
-                    <option value="dallas">Dallas, TX</option>
-                    <option value="houston">Houston, TX</option>
-                    <option value="atlanta">Atlanta, GA</option>
                     <option value="monterrey">Monterrey, MX</option>
-                    <option value="cdmx">Ciudad de México</option>
+                    <option value="honolulu">Honolulu, HI</option>
+                    <option value="kauai">Kauaʻi, HI</option>
+                    <option value="medellin">Medellín, COL</option>
                   </select>
                 </div>
               </div>
@@ -377,7 +372,7 @@ export default function GroupsPage() {
 
             <p className="text-[0.62rem] text-white/40 mb-4">
               {memberCount} {memberCount === 1 ? 'member' : 'members'}
-              {activeGroup.city ? ` · ${{ austin:'Austin', nyc:'New York', chicago:'Chicago', la:'Los Angeles', miami:'Miami', dallas:'Dallas', houston:'Houston', atlanta:'Atlanta', monterrey:'Monterrey', cdmx:'CDMX' }[activeGroup.city] ?? activeGroup.city}` : ''}
+              {activeGroup.city ? ` · ${{ austin:'Austin', monterrey:'Monterrey', honolulu:'Honolulu', kauai:"Kaua'i", medellin:'Medellín' }[activeGroup.city] ?? activeGroup.city}` : ''}
             </p>
 
             {/* Code display */}

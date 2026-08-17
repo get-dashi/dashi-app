@@ -6,19 +6,14 @@ import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import { useSaves } from '@/contexts/SavesContext'
 import type { Venue } from '@/lib/types'
 
-const LIVE_CITIES = new Set(['austin', 'monterrey'])
+const LIVE_CITIES = new Set(['austin', 'monterrey', 'honolulu', 'kauai', 'medellin'])
 
 const CITY_OPTIONS = [
   { value: 'austin',    label: 'Austin, TX' },
-  { value: 'nyc',       label: 'New York, NY' },
-  { value: 'chicago',   label: 'Chicago, IL' },
-  { value: 'la',        label: 'Los Angeles, CA' },
-  { value: 'miami',     label: 'Miami, FL' },
-  { value: 'dallas',    label: 'Dallas, TX' },
-  { value: 'houston',   label: 'Houston, TX' },
-  { value: 'atlanta',   label: 'Atlanta, GA' },
   { value: 'monterrey', label: 'Monterrey, MX' },
-  { value: 'cdmx',      label: 'Ciudad de México' },
+  { value: 'honolulu',  label: 'Honolulu, HI' },
+  { value: 'kauai',     label: "Kaua'i, HI" },
+  { value: 'medellin',  label: 'Medellín, COL' },
 ]
 
 const CATEGORY_FILTERS = [
