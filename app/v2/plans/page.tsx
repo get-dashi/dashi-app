@@ -1,15 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { GradientButton } from '@/components/v2/GradientButton'
 
-const TONIGHT_STOPS = [
+const FALLBACK_STOPS = [
   { time: '6:00 PM', type: 'Happy Hour', name: "Whisler's", sub: 'East 6th · Cocktails', emoji: '🍹', open: true },
   { time: '7:30 PM', type: 'Dinner', name: 'Suerte', sub: 'Upscale Mexican · Resy', emoji: '🌮', open: true, bookable: true },
   { time: '9:30 PM', type: 'Live Music', name: 'Parish', sub: 'Live Music Venue', emoji: '🎵', open: false },
   { time: '11:30 PM', type: 'Late Night', name: 'Rainey St.', sub: 'Bar District', emoji: '🌃', open: false },
 ]
+
+const VENUE_EMOJIS: Record<string, string> = {
+  restaurant: '🍽', bar: '🍸', cocktail: '🥂', music: '🎵', late: '🌃', default: '✨',
+}
+
+const STOP_TIMES = ['7:00 PM', '9:00 PM', '11:00 PM']
+const STOP_TYPES = ['Dinner', 'Drinks', 'Late Night']
+
+function stopsFromPairing(pairing: { names: string[]; tags?: string[]; cost?: string; reservation?: string }) {
+  return pairing.names.map((name, i) => ({
+    time: STOP_TIMES[i] ?? `${10 + i}:00 PM`,
+    type: STOP_TYPES[i] ?? 'Stop',
+    name,
+    sub: pairing.cost ? `${pairing.cost} · Dashi pick` : 'Dashi pick',
+    emoji: i === 0 ? '🍽' : '🍸',
+    open: true,
+    bookable: i === 0 && !!pairing.reservation?.includes('available'),
+  }))
+}
 
 const PAST_PLANS = [
   {
@@ -35,6 +54,21 @@ const PAST_PLANS = [
 export default function V2PlansPage() {
   const router = useRouter()
   const [tab, setTab] = useState<'tonight' | 'past'>('tonight')
+  const [pendingPairing, setPendingPairing] = useState<{ names: string[]; tagline: string; cost?: string; reservation?: string } | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('dashi_pending_plan')
+      if (!raw) return
+      const data = JSON.parse(raw)
+      if (data?.type === 'individual' && data?.pairing) {
+        setPendingPairing(data.pairing)
+        localStorage.removeItem('dashi_pending_plan')
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  const tonightStops = pendingPairing ? stopsFromPairing(pendingPairing) : FALLBACK_STOPS
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: '#09090B' }}>
@@ -72,26 +106,44 @@ export default function V2PlansPage() {
 
         {tab === 'tonight' && (
           <div className="pt-2">
-            {/* Group badge */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <div style={{ fontSize: '1.2rem' }}>🎉</div>
-                <div>
-                  <p style={{ fontSize: '0.82rem', fontWeight: 800 }}>Weekend Crew</p>
-                  <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>4 people · 94% match</p>
+            {/* Match badge or group badge */}
+            {pendingPairing ? (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div style={{ fontSize: '1.2rem' }}>✨</div>
+                  <div>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 800 }}>{pendingPairing.names.join(' + ')}</p>
+                    <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>Your Dashi match · Just you</p>
+                  </div>
                 </div>
+                <span style={{
+                  fontSize: '0.6rem', fontWeight: 800, padding: '4px 10px', borderRadius: 100,
+                  background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)', color: '#c4b5fd',
+                }}>
+                  New ✨
+                </span>
               </div>
-              <span style={{
-                fontSize: '0.6rem', fontWeight: 800, padding: '4px 10px', borderRadius: 100,
-                background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80',
-              }}>
-                Approved ✓
-              </span>
-            </div>
+            ) : (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div style={{ fontSize: '1.2rem' }}>🎉</div>
+                  <div>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 800 }}>Weekend Crew</p>
+                    <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>4 people · 94% match</p>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.6rem', fontWeight: 800, padding: '4px 10px', borderRadius: 100,
+                  background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80',
+                }}>
+                  Approved ✓
+                </span>
+              </div>
+            )}
 
             {/* Timeline */}
             <div className="flex flex-col gap-0 mb-5">
-              {TONIGHT_STOPS.map((stop, i) => (
+              {tonightStops.map((stop, i) => (
                 <div key={stop.name} className="flex gap-3">
                   {/* Line + dot */}
                   <div className="flex flex-col items-center" style={{ width: 28, flexShrink: 0 }}>
@@ -112,7 +164,7 @@ export default function V2PlansPage() {
                     }}>
                       {stop.open ? stop.emoji : <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{stop.emoji}</span>}
                     </div>
-                    {i < TONIGHT_STOPS.length - 1 && (
+                    {i < tonightStops.length - 1 && (
                       <div style={{
                         width: 2,
                         flex: 1,

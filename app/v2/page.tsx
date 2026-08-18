@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import type { Venue } from '@/lib/types'
 
+type Pairing = typeof PAIRINGS[number]
+
 // Quick filter chips — all occasions, one axis
 const CHIPS = [
   { id: 'date',      emoji: '❤️', label: 'Date night',  mood: 'date' },
@@ -98,6 +100,7 @@ export default function V2ExplorePage() {
   const [showCityMenu, setShowCityMenu] = useState(false)
   const [pairingIdx, setPairingIdx] = useState(0)
   const [swiping, setSwiping] = useState<null | 'left' | 'right'>(null)
+  const [matchedPairing, setMatchedPairing] = useState<Pairing | null>(null)
   const [liveStatus, setLiveStatus] = useState<LiveStatus>(null)
   const [liveLoading, setLiveLoading] = useState(false)
   const initialized = useRef(false)
@@ -128,12 +131,14 @@ export default function V2ExplorePage() {
   }, [pairing.id])
 
   const handleLike = useCallback(() => {
+    const liked = pairing
     setSwiping('right')
     setTimeout(() => {
       setSwiping(null)
       setPairingIdx(i => i + 1)
+      setMatchedPairing(liked)
     }, 380)
-  }, [])
+  }, [pairing])
 
   const handlePass = useCallback(() => {
     setSwiping('left')
@@ -146,7 +151,7 @@ export default function V2ExplorePage() {
   return (
     <div
       className="flex flex-col h-full overflow-hidden"
-      style={{ background: '#09090B' }}
+      style={{ background: '#09090B', position: 'relative' }}
       onClick={() => showCityMenu && setShowCityMenu(false)}
     >
       {/* ── Header ── */}
@@ -231,21 +236,7 @@ export default function V2ExplorePage() {
           })}
         </div>
 
-        {/* AI Search — secondary affordance */}
-        <button
-          className="w-full flex items-center gap-2.5 rounded-2xl px-4 mb-3 transition-all active:scale-[0.99]"
-          style={{ height: 42, background: '#151518', border: '1px solid #25252B' }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeLinecap="round">
-            <defs>
-              <linearGradient id="search-g" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7C3AED"/><stop offset="100%" stopColor="#EC4899"/>
-              </linearGradient>
-            </defs>
-            <path d="M12 2l1.09 3.26L16.5 4l-2.18 2.5L15.5 10l-3.5-2.24L8.5 10l1.18-3.5L7.5 4l3.41 1.26L12 2z" fill="url(#search-g)"/>
-          </svg>
-          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>Ask Dashi anything…</span>
-        </button>
+
       </div>
 
       {/* ── Tonight's Match ── */}
@@ -488,6 +479,91 @@ export default function V2ExplorePage() {
           ))}
         </div>
       </div>
+      {/* ── Match Sheet ── */}
+      {matchedPairing && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.72)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex', alignItems: 'flex-end',
+          }}
+          onClick={() => setMatchedPairing(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              background: '#111114',
+              borderTop: '1px solid #25252B',
+              borderRadius: '28px 28px 0 0',
+              padding: '20px 20px 36px',
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: '#333', margin: '0 auto 22px' }} />
+
+            {/* Label */}
+            <div style={{
+              fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.2em',
+              textTransform: 'uppercase', marginBottom: 4,
+              background: 'linear-gradient(135deg, #EC4899, #7C3AED)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>You matched ✨</div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 4 }}>
+              {matchedPairing.names.join(' + ')}
+            </h2>
+            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>
+              {matchedPairing.tagline}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+              {/* Just Me */}
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('dashi_pending_plan', JSON.stringify({ type: 'individual', pairing: matchedPairing })) } catch {}
+                  setMatchedPairing(null)
+                  router.push('/v2/plans')
+                }}
+                className="w-full flex items-center gap-4 rounded-[18px] px-5 transition-all active:scale-[0.98]"
+                style={{ height: 64, background: '#1A1A1E', border: '1px solid #2A2A32', cursor: 'pointer', textAlign: 'left' }}
+              >
+                <span style={{ fontSize: '1.4rem' }}>👤</span>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>Just Me</div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>Create a personal itinerary</div>
+                </div>
+                <svg style={{ marginLeft: 'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+
+              {/* With a Group */}
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('dashi_pending_plan', JSON.stringify({ type: 'group', pairing: matchedPairing })) } catch {}
+                  setMatchedPairing(null)
+                  router.push('/v2/groups')
+                }}
+                className="w-full flex items-center gap-4 rounded-[18px] px-5 transition-all active:scale-[0.98]"
+                style={{
+                  height: 64, cursor: 'pointer', textAlign: 'left',
+                  background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.1))',
+                  border: '1px solid rgba(124,58,237,0.35)',
+                }}
+              >
+                <span style={{ fontSize: '1.4rem' }}>👥</span>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>With a Group</div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>Pick your crew and share the plan</div>
+                </div>
+                <svg style={{ marginLeft: 'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.6)" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

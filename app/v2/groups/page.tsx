@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { GradientButton } from '@/components/v2/GradientButton'
 
@@ -93,6 +93,19 @@ export default function V2GroupsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
   const [newEmoji, setNewEmoji] = useState('🎉')
+  const [pendingPairing, setPendingPairing] = useState<{ names: string[]; tagline: string } | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('dashi_pending_plan')
+      if (!raw) return
+      const data = JSON.parse(raw)
+      if (data?.type === 'group' && data?.pairing) {
+        setPendingPairing(data.pairing)
+        // Keep in storage until a group is actually chosen
+      }
+    } catch { /* ignore */ }
+  }, [])
 
   const EMOJIS = ['🎉', '🥃', '✈️', '🍜', '🎵', '🏖️', '💃', '🎤']
 
@@ -116,13 +129,33 @@ export default function V2GroupsPage() {
         </button>
       </div>
 
+      {/* Match context banner */}
+      {pendingPairing && (
+        <div className="mx-5 mb-1 rounded-[16px] px-4 py-3 flex items-center gap-3 flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.1))', border: '1px solid rgba(124,58,237,0.3)' }}>
+          <span style={{ fontSize: '1.2rem' }}>✨</span>
+          <div>
+            <p style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fff' }}>Planning: {pendingPairing.names.join(' + ')}</p>
+            <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>Pick a group to share this night with</p>
+          </div>
+        </div>
+      )}
+
       {/* Group list */}
       <div className="flex-1 overflow-y-auto px-5 pb-4 no-scrollbar">
         <div className="flex flex-col gap-3 pt-1">
           {MOCK_GROUPS.map(group => (
             <button
               key={group.id}
-              onClick={() => router.push(`/v2/groups/${group.id}`)}
+              onClick={() => {
+                if (pendingPairing) {
+                  // Clear pending now that a group is chosen; plan page will see the pairing
+                  localStorage.setItem('dashi_pending_plan', JSON.stringify({ type: 'group_chosen', pairing: pendingPairing }))
+                  router.push(`/v2/groups/${group.id}/plan`)
+                } else {
+                  router.push(`/v2/groups/${group.id}`)
+                }
+              }}
               className="w-full text-left rounded-[20px] p-4 transition-all active:scale-[0.98]"
               style={{ background: '#151518', border: '1px solid #25252B' }}
             >
