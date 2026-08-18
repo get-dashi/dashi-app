@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { SplashVideo } from '@/components/layout/SplashVideo'
+import { SplashSlideshow } from '@/components/layout/SplashSlideshow'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { SavesProvider } from '@/contexts/SavesContext'
 import { VisitsProvider } from '@/contexts/VisitsContext'
@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     boxShadow: '0 0 0 1px rgba(255,255,255,.08), 0 40px 80px rgba(0,0,0,.8)',
                   }}
                 >
-                  <SplashVideo />
+                  <SplashSlideshow />
                   {children}
                 </div>
               </div>
