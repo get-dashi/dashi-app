@@ -23,30 +23,35 @@ const CITIES_DATA = [
     key: 'austin',
     name: 'Austin, TX',
     img: 'https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=600&q=80',
+    fallback: 'linear-gradient(135deg,#7C3AED 0%,#EC4899 100%)',
     venues: 120, michelin: 14,
   },
   {
     key: 'monterrey',
     name: 'Monterrey, MX',
-    img: 'https://images.unsplash.com/photo-1570554520913-ce2d7c1b7d74?w=600&q=80',
+    img: 'https://images.unsplash.com/photo-1585672306704-a8abede78d65?w=600&q=80',
+    fallback: 'linear-gradient(135deg,#F59E0B 0%,#EF4444 100%)',
     venues: 80, michelin: 4,
   },
   {
     key: 'honolulu',
     name: 'Honolulu, HI',
     img: 'https://images.unsplash.com/photo-1598135753163-6167c1a1ad65?w=600&q=80',
+    fallback: 'linear-gradient(135deg,#0EA5E9 0%,#10B981 100%)',
     venues: 95, michelin: 8,
   },
   {
     key: 'kauai',
     name: "Kaua'i, HI",
-    img: 'https://images.unsplash.com/photo-1586861203927-800a5acdce4d?w=600&q=80',
+    img: 'https://images.unsplash.com/photo-1505852679233-d9fd70aff56d?w=600&q=80',
+    fallback: 'linear-gradient(135deg,#059669 0%,#0EA5E9 100%)',
     venues: 42, michelin: 2,
   },
   {
     key: 'medellin',
     name: 'Medellín',
-    img: 'https://images.unsplash.com/photo-1567448400815-bc8803e76f0e?w=600&q=80',
+    img: 'https://images.unsplash.com/photo-1578307049-f5c042614c1c?w=600&q=80',
+    fallback: 'linear-gradient(135deg,#8B5CF6 0%,#EC4899 100%)',
     venues: 68, michelin: 3,
   },
 ]
@@ -267,7 +272,13 @@ export default function V2ExplorePage() {
                         {/* City photo */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={c.img} alt={c.name}
+                          src={c.img}
+                          alt=""
+                          onError={(e) => {
+                            const el = e.target as HTMLImageElement
+                            el.style.display = 'none'
+                            if (el.parentElement) el.parentElement.style.background = c.fallback
+                          }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                         {/* Gradient overlay */}
@@ -562,9 +573,10 @@ export default function V2ExplorePage() {
           <div style={{ position: 'relative', height: 500, borderRadius: 28, overflow: 'hidden' }}>
             <V2CardStack
               venues={
+                // Always show the full Austin deck — city-specific venues added as data grows
                 filteredVenues.length > 0
                   ? filteredVenues
-                  : ALL_FEATURED_VENUES.filter(v => !v.city || v.city === city)
+                  : ALL_FEATURED_VENUES
               }
               onLike={(v) => console.log('liked', v.name)}
               onPass={(v) => console.log('passed', v.name)}
