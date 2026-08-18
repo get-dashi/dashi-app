@@ -29,30 +29,30 @@ const CITIES_DATA = [
   {
     key: 'monterrey',
     name: 'Monterrey, MX',
-    img: 'https://images.unsplash.com/photo-1585672306704-a8abede78d65?w=600&q=80',
+    img: 'https://upload.wikimedia.org/wikipedia/commons/d/de/View_of_Monterrey_%282015%29.jpg',
     fallback: 'linear-gradient(135deg,#F59E0B 0%,#EF4444 100%)',
-    venues: 80, michelin: 4,
+    venues: 73, michelin: 7,
   },
   {
     key: 'honolulu',
     name: 'Honolulu, HI',
-    img: 'https://images.unsplash.com/photo-1598135753163-6167c1a1ad65?w=600&q=80',
+    img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
     fallback: 'linear-gradient(135deg,#0EA5E9 0%,#10B981 100%)',
-    venues: 95, michelin: 8,
+    venues: 56, michelin: 4,
   },
   {
     key: 'kauai',
     name: "Kaua'i, HI",
-    img: 'https://images.unsplash.com/photo-1505852679233-d9fd70aff56d?w=600&q=80',
+    img: 'https://images.unsplash.com/photo-1542259009477-d625272157b7?w=800&q=80',
     fallback: 'linear-gradient(135deg,#059669 0%,#0EA5E9 100%)',
-    venues: 42, michelin: 2,
+    venues: 57, michelin: 0,
   },
   {
     key: 'medellin',
     name: 'Medellín',
-    img: 'https://images.unsplash.com/photo-1578307049-f5c042614c1c?w=600&q=80',
+    img: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/El_Poblado_Medell%C3%ADn.jpg',
     fallback: 'linear-gradient(135deg,#8B5CF6 0%,#EC4899 100%)',
-    venues: 68, michelin: 3,
+    venues: 85, michelin: 0,
   },
 ]
 const CITIES: Record<string, string> = Object.fromEntries(CITIES_DATA.map(c => [c.key, c.name]))
