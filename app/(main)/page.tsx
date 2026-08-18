@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ALL_FEATURED_VENUES } from '@/lib/venues'
+import { V2CardStack } from '@/components/v2/CardStack'
 import type { Venue } from '@/lib/types'
 
 type Pairing = typeof PAIRINGS[number]
@@ -17,13 +18,39 @@ const CHIPS = [
   { id: 'vibe',      emoji: '✨', label: 'Good vibes',  mood: 'vibe' },
 ]
 
-const CITIES: Record<string, string> = {
-  austin:    'Austin, TX',
-  monterrey: 'Monterrey, MX',
-  honolulu:  'Honolulu, HI',
-  kauai:     "Kaua'i, HI",
-  medellin:  'Medellín',
-}
+const CITIES_DATA = [
+  {
+    key: 'austin',
+    name: 'Austin, TX',
+    img: 'https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=600&q=80',
+    venues: 120, michelin: 14,
+  },
+  {
+    key: 'monterrey',
+    name: 'Monterrey, MX',
+    img: 'https://images.unsplash.com/photo-1570554520913-ce2d7c1b7d74?w=600&q=80',
+    venues: 80, michelin: 4,
+  },
+  {
+    key: 'honolulu',
+    name: 'Honolulu, HI',
+    img: 'https://images.unsplash.com/photo-1598135753163-6167c1a1ad65?w=600&q=80',
+    venues: 95, michelin: 8,
+  },
+  {
+    key: 'kauai',
+    name: "Kaua'i, HI",
+    img: 'https://images.unsplash.com/photo-1586861203927-800a5acdce4d?w=600&q=80',
+    venues: 42, michelin: 2,
+  },
+  {
+    key: 'medellin',
+    name: 'Medellín',
+    img: 'https://images.unsplash.com/photo-1567448400815-bc8803e76f0e?w=600&q=80',
+    venues: 68, michelin: 3,
+  },
+]
+const CITIES: Record<string, string> = Object.fromEntries(CITIES_DATA.map(c => [c.key, c.name]))
 
 // Curated pairings — "venue + venue" recommendation combos
 const PAIRINGS = [
@@ -105,6 +132,23 @@ export default function V2ExplorePage() {
   const [liveLoading, setLiveLoading] = useState(false)
   const initialized = useRef(false)
 
+  // All venues filtered by city + mood for the swipe deck
+  const MOOD_TAGS: Record<string, string[]> = {
+    date: ['romantic','date','intimate','wine bar','upscale','cocktail'],
+    dance: ['club','dance','rooftop','group','nightlife'],
+    happy: ['happy hour','bar','cocktail','casual'],
+    celebrate: ['celebration','upscale','cocktail','rooftop'],
+    late: ['late night','bar','club'],
+    vibe: ['craft cocktails','trendy','rooftop','vibes'],
+  }
+  const filteredVenues = ALL_FEATURED_VENUES.filter(v => {
+    const cityMatch = !v.city || v.city === city
+    if (!cityMatch) return false
+    if (mood === 'all') return true
+    const tags = (MOOD_TAGS[mood] ?? []).map(t => t.toLowerCase())
+    return v.tags?.some(t => tags.some(m => t.toLowerCase().includes(m)))
+  })
+
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
@@ -171,21 +215,89 @@ export default function V2ExplorePage() {
               <polyline points="6 9 12 15 18 9"/>
             </svg>
           </button>
+          {/* Photo city picker modal */}
           {showCityMenu && (
-            <div className="absolute top-full left-0 mt-2 rounded-2xl overflow-hidden z-50"
-              style={{ background: '#151518', border: '1px solid #25252B', minWidth: 180, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
-              {Object.entries(CITIES).map(([key, label]) => (
-                <button key={key}
-                  onClick={(e) => { e.stopPropagation(); setCity(key); setShowCityMenu(false) }}
-                  className="w-full text-left px-4 py-3 transition-all"
-                  style={{
-                    background: city === key ? 'rgba(124,58,237,0.15)' : 'transparent',
-                    color: city === key ? '#fff' : 'rgba(255,255,255,0.55)',
-                    fontSize: '0.8rem', fontWeight: city === key ? 700 : 500,
-                  }}>
-                  {label}
-                </button>
-              ))}
+            <div
+              style={{
+                position: 'fixed', inset: 0, zIndex: 200,
+                background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(16px)',
+                display: 'flex', flexDirection: 'column',
+              }}
+              onClick={() => setShowCityMenu(false)}
+            >
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                  margin: 'auto 0 0',
+                  background: '#111114',
+                  borderRadius: '28px 28px 0 0',
+                  borderTop: '1px solid rgba(255,255,255,0.08)',
+                  padding: '0 0 40px',
+                  maxHeight: '82vh',
+                  overflowY: 'auto',
+                }}
+              >
+                {/* Handle */}
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: '#333', margin: '16px auto 0' }} />
+
+                {/* Title */}
+                <div style={{ padding: '18px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.02em' }}>Explore Cities</span>
+                  <button onClick={() => setShowCityMenu(false)}
+                    style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                    ×
+                  </button>
+                </div>
+
+                {/* City grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 16px' }}>
+                  {CITIES_DATA.map(c => {
+                    const active = city === c.key
+                    return (
+                      <button
+                        key={c.key}
+                        onClick={() => { setCity(c.key); setShowCityMenu(false) }}
+                        style={{
+                          position: 'relative', height: 130, borderRadius: 18,
+                          overflow: 'hidden', border: 'none', cursor: 'pointer', padding: 0,
+                          outline: active ? '2.5px solid transparent' : 'none',
+                          boxShadow: active ? '0 0 0 2.5px #7C3AED, 0 0 0 4px rgba(124,58,237,0.25)' : 'none',
+                        }}
+                      >
+                        {/* City photo */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={c.img} alt={c.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                        {/* Gradient overlay */}
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)',
+                        }} />
+                        {/* LIVE badge */}
+                        <div style={{
+                          position: 'absolute', top: 8, right: 8,
+                          background: active ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : 'rgba(34,197,94,0.85)',
+                          backdropFilter: 'blur(8px)',
+                          borderRadius: 100, padding: '2px 7px',
+                          fontSize: '0.48rem', fontWeight: 800,
+                          letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff',
+                        }}>
+                          {active ? 'Selected' : 'Live'}
+                        </div>
+                        {/* City name + stats */}
+                        <div style={{ position: 'absolute', bottom: 10, left: 10, textAlign: 'left' }}>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#fff', lineHeight: 1.2 }}>{c.name}</div>
+                          <div style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>
+                            {c.venues} spots · {c.michelin} Michelin
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -436,47 +548,29 @@ export default function V2ExplorePage() {
           </div>
         </div>
 
-        {/* Secondary cards peek */}
-        <div className="flex gap-3 mt-4 pb-2">
-          {[
-            { name: 'Rooftop at\nThe Line Hotel', rating: '4.7', img: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=200&q=75', details: ['Sunset views', 'Great cocktails', 'No reservation needed', 'Estimated cost: $$'] },
-            { name: 'Loro\nAsian Smokehouse', rating: '4.6', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&q=75', details: ['Fun atmosphere', 'Group-friendly', 'Reservation: 7:00 PM', 'Estimated cost: $$$'] },
-          ].map((card, i) => (
-            <div key={i} className="flex-1 rounded-[18px] overflow-hidden" style={{ background: '#151518', border: '1px solid #25252B' }}>
-              <div style={{ position: 'relative', height: 100 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={card.img} alt={card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 60%)' }} />
-                {/* Rating */}
-                <div style={{ position: 'absolute', top: 6, left: 8, display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="#FFD60A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#FFD60A' }}>{card.rating}</span>
-                </div>
-                {/* Heart */}
-                <div style={{ position: 'absolute', top: 6, right: 8, width: 24, height: 24, borderRadius: '50%', background: 'rgba(236,72,153,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#EC4899"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                </div>
-                {/* Name over image */}
-                <div style={{ position: 'absolute', bottom: 6, left: 8, right: 8 }}>
-                  <p style={{ fontSize: '0.65rem', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'pre-line' }}>{card.name}</p>
-                </div>
-              </div>
-              {/* Details */}
-              <div style={{ padding: '8px 8px 10px' }}>
-                {card.details.map((d, di) => (
-                  <p key={di} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{d}</p>
-                ))}
-              </div>
-              {/* Pass/X */}
-              <div style={{ padding: '0 8px 8px', display: 'flex', justifyContent: 'center' }}>
-                <button style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* ── Discover — full venue swipe deck ── */}
+        <div style={{ marginTop: 20, marginBottom: 4 }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>
+              Discover {CITIES_DATA.find(c => c.key === city)?.name ?? 'Austin'} 📍
+            </span>
+            <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+              Swipe to explore
+            </span>
+          </div>
+          {/* Relative container — V2CardStack fills this */}
+          <div style={{ position: 'relative', height: 500, borderRadius: 28, overflow: 'hidden' }}>
+            <V2CardStack
+              venues={
+                filteredVenues.length > 0
+                  ? filteredVenues
+                  : ALL_FEATURED_VENUES.filter(v => !v.city || v.city === city)
+              }
+              onLike={(v) => console.log('liked', v.name)}
+              onPass={(v) => console.log('passed', v.name)}
+              onEmpty={() => {}}
+            />
+          </div>
         </div>
       </div>
       {/* ── Match Sheet ── */}
