@@ -1,5 +1,5 @@
-import { AppShell } from '@/components/layout/AppShell'
+import { V2AppShell } from '@/components/v2/AppShell'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>
+  return <V2AppShell>{children}</V2AppShell>
 }

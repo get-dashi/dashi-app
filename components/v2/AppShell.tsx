@@ -5,7 +5,7 @@ import { V2BottomNav } from './BottomNav'
 
 export function V2AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const hideNav = pathname === '/v2/login' || pathname === '/v2/signup' || pathname === '/v2/lists/add-venue'
+  const hideNav = pathname === '/login' || pathname === '/signup' || pathname === '/lists/add-venue'
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: '#09090B' }}>

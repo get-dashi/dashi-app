@@ -1,402 +1,569 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { Header } from '@/components/layout/Header'
-import { MoodFilter } from '@/components/explore/MoodFilter'
-import { CardStack } from '@/components/explore/CardStack'
-import { MatchToast } from '@/components/explore/MatchToast'
-import { Modal } from '@/components/ui/Modal'
-import { BookButton } from '@/components/booking/BookButton'
-import { ALL_FEATURED_VENUES, filterVenues } from '@/lib/venues'
-import { useSaves } from '@/contexts/SavesContext'
-import { useVisits } from '@/contexts/VisitsContext'
-import { useRankings } from '@/contexts/RankingsContext'
-import { useToast } from '@/contexts/ToastContext'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import type { Venue } from '@/lib/types'
 
-function getSwipedKey(city: string) { return `dashi_swiped_${city}` }
-function getIndexKey(city: string)  { return `dashi_idx_${city}` }
+type Pairing = typeof PAIRINGS[number]
 
+// Quick filter chips — all occasions, one axis
+const CHIPS = [
+  { id: 'date',      emoji: '❤️', label: 'Date night',  mood: 'date' },
+  { id: 'group',     emoji: '👥', label: 'Group night', mood: 'dance' },
+  { id: 'happy',     emoji: '🥂', label: 'Happy hour',  mood: 'happy' },
+  { id: 'celebrate', emoji: '🎉', label: 'Celebration', mood: 'celebrate' },
+  { id: 'late',      emoji: '🌙', label: 'Late night',  mood: 'late' },
+  { id: 'vibe',      emoji: '✨', label: 'Good vibes',  mood: 'vibe' },
+]
+
+const CITIES: Record<string, string> = {
+  austin:    'Austin, TX',
+  monterrey: 'Monterrey, MX',
+  honolulu:  'Honolulu, HI',
+  kauai:     "Kaua'i, HI",
+  medellin:  'Medellín',
+}
+
+// Curated pairings — "venue + venue" recommendation combos
+const PAIRINGS = [
+  {
+    id: 'uchi-dmc',
+    names: ['Uchi', 'Devil May Care'],
+    placeIds: ['ChIJz2Whyx61RIYR7mCeZje-QWw', 'ChIJW02GaiG1RIYR8ZZKBuZOWQg'],
+    liveNote: null as string | null,
+    tagline: 'Perfect for a romantic night out.',
+    img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80',
+    rating: '4.9',
+    reservation: 'Reservation available: 7:30 PM',
+    followup: 'Cocktails afterward',
+    cost: '$$$',
+    tags: ['Japanese', 'Omakase'],
+  },
+  {
+    id: 'hestia-white-horse',
+    names: ['Hestia', 'White Horse'],
+    placeIds: ['ChIJlWBjs7-1RIYRsJt0C41E558', 'ChIJ279pHrG1RIYRicks_tZPpjs'],
+    liveNote: 'Band at 9 PM' as string | null,
+    tagline: 'Wood-fire dinner, then honky-tonk.',
+    img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80',
+    rating: '4.8',
+    reservation: 'Reservation available: 8:00 PM',
+    followup: 'Live music 9:30 PM',
+    cost: '$$$',
+    tags: ['Wood-Fire', 'American'],
+  },
+  {
+    id: 'suerte-rainey',
+    names: ['Suerte', 'Rainey St.'],
+    placeIds: ['ChIJAQBE-7a1RIYRcZNYsxWYIUg'],
+    liveNote: null as string | null,
+    tagline: 'Best masa in town, then the best block.',
+    img: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=80',
+    rating: '4.8',
+    reservation: 'No reservation needed',
+    followup: 'Bar crawl afterward',
+    cost: '$$',
+    tags: ['Mexican', 'Bar Crawl'],
+  },
+]
+
+type LiveStatus = {
+  openNow: boolean
+  closingAt: string | null
+  minutesUntilClose: number | null
+  closingSoon: boolean
+  lastCall: boolean
+} | null
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  if (h < 21) return 'Good evening'
+  return 'Good night'
+}
+
+function getSwipedKey(city: string) { return `dashi_v2_swiped_${city}` }
 function loadSwiped(city: string): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem(getSwipedKey(city)) ?? '[]') as string[]) }
-  catch { return new Set() }
+  try { return new Set(JSON.parse(localStorage.getItem(getSwipedKey(city)) ?? '[]') as string[]) } catch { return new Set() }
 }
 function saveSwiped(city: string, ids: Set<string>) {
-  try { localStorage.setItem(getSwipedKey(city), JSON.stringify([...ids])) } catch { /* ignore */ }
-}
-function loadIndex(city: string): number {
-  try { return parseInt(localStorage.getItem(getIndexKey(city)) ?? '0', 10) || 0 }
-  catch { return 0 }
-}
-function saveIndex(city: string, idx: number) {
-  try { localStorage.setItem(getIndexKey(city), String(idx)) } catch { /* ignore */ }
+  try { localStorage.setItem(getSwipedKey(city), JSON.stringify([...ids])) } catch { /* */ }
 }
 
-export default function ExplorePage() {
+export default function V2ExplorePage() {
+  const router = useRouter()
   const [mood, setMood] = useState('all')
   const [city, setCity] = useState('austin')
-  const [cardIndex, setCardIndex] = useState(0)
   const [swipedIds, setSwipedIds] = useState<Set<string>>(new Set())
-  const [matchVenue, setMatchVenue] = useState<Venue | null>(null)
-  const [savedDrawerOpen, setSavedDrawerOpen] = useState(false)
-  const [venues, setVenues] = useState<Venue[]>(() =>
-    ALL_FEATURED_VENUES.filter(v => v.city === 'austin' || !v.city)
-  )
-  const fetchedCities = useRef<Set<string>>(new Set())
+  const [showCityMenu, setShowCityMenu] = useState(false)
+  const [pairingIdx, setPairingIdx] = useState(0)
+  const [swiping, setSwiping] = useState<null | 'left' | 'right'>(null)
+  const [matchedPairing, setMatchedPairing] = useState<Pairing | null>(null)
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>(null)
+  const [liveLoading, setLiveLoading] = useState(false)
   const initialized = useRef(false)
 
-  const { saveVenue, savedVenues, unsaveVenue, clearAllSaves } = useSaves()
-  const { isVisited, markVisited, unmarkVisited } = useVisits()
-  const { addToRanking, getRankings } = useRankings()
-  const { showToast } = useToast()
-  const [rankItVenue, setRankItVenue] = useState<Venue | null>(null)
-
-  // Restore swiped IDs and index from localStorage on first mount
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
-    const swiped = loadSwiped('austin')
-    const idx = loadIndex('austin')
-    setSwipedIds(swiped)
-    setCardIndex(idx)
+    setSwipedIds(loadSwiped('austin'))
   }, [])
 
-  // Background fetch from Google Places — never rebuilds stack, only appends
+  const pairing = PAIRINGS[pairingIdx % PAIRINGS.length]
+
+  // Fetch live status whenever the visible pairing changes
   useEffect(() => {
-    if (fetchedCities.current.has(city)) return
-    fetchedCities.current.add(city)
-
-    const featured = ALL_FEATURED_VENUES.filter(v => city === 'austin' ? (v.city === 'austin' || !v.city) : v.city === city)
-    setVenues(featured)
-
-    fetch(`/api/venues?city=${city}`)  
+    const ids = pairing.placeIds?.join(',')
+    if (!ids) return
+    setLiveStatus(null)
+    setLiveLoading(true)
+    fetch(`/api/live-status?ids=${ids}`)
       .then(r => r.json())
-      .then(({ venues: googleVenues }: { venues: Venue[] }) => {
-        if (!Array.isArray(googleVenues)) return
-        setVenues(prev => {
-          const existingNames = new Set(prev.map(v => v.name.toLowerCase()))
-          const newVenues = googleVenues.filter(v => !existingNames.has(v.name.toLowerCase()))
-          return [...prev, ...newVenues]
-        })
+      .then((data: { statuses?: { id: string; status: LiveStatus }[] }) => {
+        const statuses = (data.statuses ?? []).map(s => s.status).filter(Boolean) as NonNullable<LiveStatus>[]
+        const open = statuses.find(s => s.openNow) ?? statuses[0] ?? null
+        setLiveStatus(open)
       })
-      .catch(() => { /* Google Places unavailable — featured picks still show */ })
-  }, [city])
+      .catch(() => setLiveStatus(null))
+      .finally(() => setLiveLoading(false))
+  }, [pairing.id])
 
-  // Filter out already-swiped venues, then apply mood filter
-  const unswiped = venues.filter(v => !swipedIds.has(v.id))
-  const filtered = filterVenues(unswiped, mood)
+  const handleLike = useCallback(() => {
+    const liked = pairing
+    setSwiping('right')
+    setTimeout(() => {
+      setSwiping(null)
+      setPairingIdx(i => i + 1)
+      setMatchedPairing(liked)
+    }, 380)
+  }, [pairing])
 
-  const recordSwipe = useCallback((venue: Venue, currentCity: string) => {
-    setSwipedIds(prev => {
-      const next = new Set(prev)
-      next.add(venue.id)
-      saveSwiped(currentCity, next)
-      return next
-    })
-    setCardIndex(i => {
-      const next = i + 1
-      saveIndex(currentCity, next)
-      return next
-    })
+  const handlePass = useCallback(() => {
+    setSwiping('left')
+    setTimeout(() => {
+      setSwiping(null)
+      setPairingIdx(i => i + 1)
+    }, 380)
   }, [])
-
-  const handleLike = useCallback((venue: Venue) => {
-    saveVenue(venue)
-    setMatchVenue(venue)
-    recordSwipe(venue, city)
-  }, [saveVenue, recordSwipe, city])
-
-  const handlePass = useCallback((venue: Venue) => {
-    showToast(`Passed on ${venue.name}`, 'info', 1500)
-    recordSwipe(venue, city)
-  }, [showToast, recordSwipe, city])
-
-  const handleEmpty = useCallback(() => {
-    // Seen everything — reset swiped history for this city so deck refreshes
-    setSwipedIds(new Set())
-    saveSwiped(city, new Set())
-    saveIndex(city, 0)
-    setCardIndex(0)
-    setMood('all')
-  }, [city])
-
-  const handleMoodChange = (newMood: string) => {
-    setMood(newMood)
-  }
-
-  // Action buttons
-  const handleActionLike = () => {
-    const venue = filtered[cardIndex]
-    if (!venue) return
-    handleLike(venue)
-  }
-
-  const handleActionPass = () => {
-    const venue = filtered[cardIndex]
-    if (!venue) return
-    handlePass(venue)
-  }
-
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <Header
-        onSavesClick={() => setSavedDrawerOpen(true)}
-        showCitySelector
-        city={city}
-        onCityChange={(c) => {
-          setCity(c)
-          setMood('all')
-          // Restore per-city swiped state
-          const swiped = loadSwiped(c)
-          const idx = loadIndex(c)
-          setSwipedIds(swiped)
-          setCardIndex(idx)
-          // Load featured for new city immediately; background fetch will merge Google Places
-          const featured = ALL_FEATURED_VENUES.filter(v => c === 'austin' ? (v.city === 'austin' || !v.city) : v.city === c)
-          setVenues(featured)
-        }}
-      />
-
-      {/* Mood filters */}
-      <MoodFilter active={mood} onChange={handleMoodChange} />
-
-      {/* Card area */}
-      <div className="flex-1 relative overflow-hidden px-5">
-        <CardStack
-          venues={filtered}
-          currentIndex={cardIndex}
-          onLike={handleLike}
-          onPass={handlePass}
-          onEmpty={handleEmpty}
-        />
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex items-center justify-center gap-5 px-5 py-4 flex-shrink-0">
-        {/* Pass */}
-        <button
-          onClick={handleActionPass}
-          className="w-[60px] h-[60px] rounded-full flex items-center justify-center bg-red-500/12 border border-red-500/30 transition-all active:scale-90"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff375f" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-
-        {/* Info */}
-        <button className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white/7 border border-white/12">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </button>
-
-        {/* Like */}
-        <button
-          onClick={handleActionLike}
-          className="w-[68px] h-[68px] rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/35 transition-all active:scale-90"
-        >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Match Toast */}
-      <MatchToast venue={matchVenue} onContinue={() => setMatchVenue(null)} />
-
-      {/* Rank It Sheet */}
-      {rankItVenue && (
-        <ExploreRankItSheet
-          venue={rankItVenue}
-          city={city}
-          onClose={() => setRankItVenue(null)}
-          getRankings={getRankings}
-          addToRanking={addToRanking}
-          showToast={showToast}
-        />
-      )}
-
-      {/* Saved Drawer */}
-      <Modal open={savedDrawerOpen} onClose={() => setSavedDrawerOpen(false)} title={`Saved (${savedVenues.length})`}>
-        {savedVenues.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-white/30 text-sm mb-6">No saved venues yet. Start swiping!</p>
-            <button
-              onClick={() => {
-                setSwipedIds(new Set())
-                saveSwiped(city, new Set())
-                saveIndex(city, 0)
-                setCardIndex(0)
-                setSavedDrawerOpen(false)
-                showToast('Deck reset — all venues back', 'success')
-              }}
-              className="text-xs font-bold text-white/30 underline hover:text-white/60 transition-colors"
-            >
-              Reset deck
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5 max-h-[60vh] overflow-y-auto no-scrollbar">
-            {savedVenues.map(venue => {
-              const visited = isVisited(venue.id)
-              return (
-                <div key={venue.id} className="flex items-center gap-3.5 bg-[#1c1c1e] rounded-2xl p-3.5">
-                  <img
-                    src={venue.img}
-                    alt={venue.name}
-                    className="rounded-xl object-cover flex-shrink-0"
-                    style={{ width: 52, height: 52 }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">{venue.name}</p>
-                    <p className="text-xs text-white/40">{venue.type} · {venue.dist}</p>
-                    {venue.happyHour && (
-                      <p className="text-xs font-bold text-purple-400 mt-0.5">{venue.happyHour}</p>
-                    )}
-                    {venue.bookingPlatform && (
-                      <div className="mt-1.5">
-                        <BookButton venue={venue} size="sm" />
-                      </div>
-                    )}
-                  </div>
-                  {/* Visited checkmark */}
-                  <button
-                    onClick={() => {
-                      if (visited) {
-                        unmarkVisited(venue.id)
-                        showToast(`Removed from visited`, 'info', 2000)
-                      } else {
-                        markVisited(venue)
-                        showToast(`Marked as visited! Rank it?`, 'success', 4000)
-                        setRankItVenue(venue)
-                      }
-                    }}
-                    className="w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0"
-                    style={{
-                      background: visited ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
-                      border: `1px solid ${visited ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                    }}
-                    aria-label={visited ? `Unmark ${venue.name} as visited` : `Mark ${venue.name} as visited`}
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                      stroke={visited ? '#22c55e' : 'rgba(255,255,255,0.3)'}
-                      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </button>
-                  {/* Remove button */}
-                  <button
-                    onClick={() => unsaveVenue(venue.id)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0"
-                    aria-label={`Remove ${venue.name}`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-                    </svg>
-                  </button>
-                </div>
-              )
-            })}
-
-            {/* Bottom actions */}
-            <div className="flex items-center justify-between pt-2 pb-1 border-t border-white/8 mt-1">
-              <button
-                onClick={() => {
-                  setSwipedIds(new Set())
-                  saveSwiped(city, new Set())
-                  saveIndex(city, 0)
-                  setCardIndex(0)
-                  setSavedDrawerOpen(false)
-                  showToast('Deck reset — all venues back', 'success')
-                }}
-                className="text-[0.7rem] font-bold text-white/35 hover:text-white/60 transition-colors"
-              >
-                Reset deck
-              </button>
-              <button
-                onClick={() => {
-                  clearAllSaves()
-                }}
-                className="text-[0.7rem] font-bold text-red-400/60 hover:text-red-400 transition-colors"
-              >
-                Clear all
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-    </div>
-  )
-}
-
-// ─── Explore-page Rank It Sheet ─────────────────────────────────────────────
-
-function ExploreRankItSheet({
-  venue,
-  city,
-  onClose,
-  getRankings,
-  addToRanking,
-  showToast,
-}: {
-  venue: Venue
-  city: string
-  onClose: () => void
-  getRankings: (city: string) => { venue: Venue; position: number; city: string }[]
-  addToRanking: (venue: Venue, city: string, position: number) => void
-  showToast: (msg: string, type?: 'success' | 'error' | 'info', duration?: number) => void
-}) {
-  const currentRankings = getRankings(city)
-
-  const handleSlot = (position: number) => {
-    addToRanking(venue, city, position)
-    showToast(`${venue.name} ranked #${position}!`, 'success')
-    onClose()
-  }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)' }}
-      onClick={onClose}
+      className="flex flex-col h-full overflow-hidden"
+      style={{ background: '#09090B', position: 'relative' }}
+      onClick={() => showCityMenu && setShowCityMenu(false)}
     >
-      <div
-        className="w-full max-w-[390px] bg-[#161618] rounded-t-[28px] p-5 pb-8"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
-        <p className="text-[0.88rem] font-black mb-1">Rank &ldquo;{venue.name}&rdquo;</p>
-        <p className="text-[0.65rem] text-white/40 mb-4">
-          Choose a position in your Top 10 for {city === 'monterrey' ? 'Monterrey' : city === 'honolulu' ? 'Honolulu' : city === 'kauai' ? "Kaua'i" : 'Austin'}
-        </p>
-        <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto no-scrollbar">
-          {Array.from({ length: 10 }, (_, i) => i + 1).map(pos => {
-            const occupant = currentRankings.find(r => r.position === pos)
-            return (
-              <button
-                key={pos}
-                onClick={() => handleSlot(pos)}
-                className="flex items-center gap-3 px-4 py-3 rounded-[14px] bg-white/5 border border-white/8 hover:bg-white/10 transition-all active:scale-98 text-left"
-              >
-                <span
-                  className="w-7 text-center font-black text-[0.9rem] flex-shrink-0"
+      {/* ── Header ── */}
+      <div className="px-5 pt-4 pb-0 flex-shrink-0 flex items-center justify-between">
+        {/* City picker */}
+        <div className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowCityMenu(v => !v) }}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="rgba(168,85,247,0.9)"/>
+            </svg>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#fff' }}>{CITIES[city]}</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          {showCityMenu && (
+            <div className="absolute top-full left-0 mt-2 rounded-2xl overflow-hidden z-50"
+              style={{ background: '#151518', border: '1px solid #25252B', minWidth: 180, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+              {Object.entries(CITIES).map(([key, label]) => (
+                <button key={key}
+                  onClick={(e) => { e.stopPropagation(); setCity(key); setShowCityMenu(false) }}
+                  className="w-full text-left px-4 py-3 transition-all"
                   style={{
-                    color: pos === 1 ? '#ffd60a' : pos === 2 ? 'rgba(255,255,255,0.7)' : pos === 3 ? '#f97316' : 'rgba(255,255,255,0.3)',
-                  }}
-                >
-                  {pos}
-                </span>
-                {occupant ? (
-                  <span className="text-[0.75rem] text-white/60 truncate">{occupant.venue.name}</span>
-                ) : (
-                  <span className="text-[0.75rem] text-white/25">Empty slot</span>
-                )}
+                    background: city === key ? 'rgba(124,58,237,0.15)' : 'transparent',
+                    color: city === key ? '#fff' : 'rgba(255,255,255,0.55)',
+                    fontSize: '0.8rem', fontWeight: city === key ? 700 : 500,
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Bell */}
+          <button style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+          {/* Avatar */}
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #7C3AED, #EC4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: '#fff' }}>R</div>
+        </div>
+      </div>
+
+      {/* ── Greeting ── */}
+      <div className="px-5 pt-3 pb-0 flex-shrink-0">
+        <p suppressHydrationWarning style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', marginBottom: 2 }}>
+          {getGreeting()}, Ricky 👋
+        </p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 12 }}>
+          What are we doing{' '}
+          <span style={{ background: 'linear-gradient(135deg, #EC4899, #7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            tonight?
+          </span>
+        </h1>
+
+        {/* Quick chips */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
+          {CHIPS.map(chip => {
+            const active = mood === chip.mood
+            return (
+              <button key={chip.id}
+                onClick={() => setMood(active ? 'all' : chip.mood)}
+                className="flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all whitespace-nowrap"
+                style={{
+                  background: active ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : '#151518',
+                  border: `1px solid ${active ? 'transparent' : '#25252B'}`,
+                  color: active ? '#fff' : 'rgba(255,255,255,0.55)',
+                  fontSize: '0.72rem', fontWeight: 700,
+                  boxShadow: active ? '0 4px 14px rgba(124,58,237,0.35)' : 'none',
+                }}>
+                <span style={{ fontSize: '0.75rem' }}>{chip.emoji}</span>
+                {chip.label}
               </button>
             )
           })}
         </div>
+
+
       </div>
+
+      {/* ── Tonight's Match ── */}
+      <div className="flex-1 overflow-y-auto px-5 pb-2 no-scrollbar">
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Tonight&apos;s Match ✨</span>
+          <button style={{ fontSize: '0.72rem', color: 'rgba(168,85,247,0.85)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>See all</button>
+        </div>
+
+        {/* Recommendation card */}
+        <div
+          className="rounded-[24px] overflow-hidden transition-all"
+          style={{
+            background: '#151518',
+            border: '1px solid #25252B',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+            transform: swiping === 'right'
+              ? 'translateX(140%) rotate(16deg)'
+              : swiping === 'left'
+              ? 'translateX(-140%) rotate(-16deg)'
+              : 'translateX(0) rotate(0deg)',
+            transition: swiping ? 'transform 0.38s cubic-bezier(0.4,0,0.6,1)' : 'none',
+          }}
+        >
+          {/* Photo */}
+          <div style={{ position: 'relative', height: 200 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={pairing.img}
+              alt={pairing.names.join(' + ')}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            {/* Gradient overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)' }} />
+
+            {/* Venue name pills */}
+            <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 6 }}>
+              {pairing.names.map(name => (
+                <span key={name}
+                  style={{
+                    background: 'rgba(21,21,24,0.85)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: 100,
+                    padding: '4px 10px',
+                    fontSize: '0.6rem',
+                    fontWeight: 800,
+                    color: 'rgba(255,255,255,0.9)',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}>
+                  {name}
+                </span>
+              ))}
+            </div>
+
+            {/* Heart */}
+            <button
+              onClick={handleLike}
+              style={{
+                position: 'absolute', top: 10, right: 12,
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(21,21,24,0.7)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+
+            {/* Rating */}
+            <div style={{ position: 'absolute', bottom: 10, left: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFD60A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#FFD60A' }}>{pairing.rating}</span>
+            </div>
+          </div>
+
+          {/* Card body */}
+          <div style={{ padding: '16px 16px 0' }}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 4 }}>
+              {pairing.names.join(' + ')}
+            </h2>
+            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginBottom: 10 }}>
+              {pairing.tagline}
+            </p>
+
+            {/* Live layer */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, minHeight: 24 }}>
+              {liveLoading && (
+                <div style={{ height: 22, width: 120, borderRadius: 100, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              )}
+              {!liveLoading && liveStatus?.openNow && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: liveStatus.lastCall ? 'rgba(239,68,68,0.12)' : liveStatus.closingSoon ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.1)',
+                  border: `1px solid ${liveStatus.lastCall ? 'rgba(239,68,68,0.35)' : liveStatus.closingSoon ? 'rgba(245,158,11,0.35)' : 'rgba(34,197,94,0.3)'}`,
+                  borderRadius: 100, padding: '3px 9px',
+                }}>
+                  <div className="animate-pulse" style={{
+                    width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                    background: liveStatus.lastCall ? '#ef4444' : liveStatus.closingSoon ? '#f59e0b' : '#22c55e',
+                  }} />
+                  <span style={{
+                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.07em',
+                    color: liveStatus.lastCall ? '#ef4444' : liveStatus.closingSoon ? '#f59e0b' : '#22c55e',
+                  }}>
+                    {liveStatus.lastCall
+                      ? 'LAST CALL'
+                      : liveStatus.closingSoon
+                      ? `CLOSING SOON · ${liveStatus.minutesUntilClose} MIN`
+                      : liveStatus.closingAt
+                      ? `OPEN · CLOSES ${liveStatus.closingAt}`
+                      : 'OPEN NOW'}
+                  </span>
+                </div>
+              )}
+              {!liveLoading && pairing.liveNote && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: 'rgba(168,85,247,0.1)',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                  borderRadius: 100, padding: '3px 9px',
+                }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.07em', color: '#c4b5fd' }}>
+                    🎵 {pairing.liveNote}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Detail rows */}
+            <div className="flex flex-col gap-2.5 mb-4">
+              {[
+                { icon: '🗓', text: pairing.reservation },
+                { icon: '🍸', text: pairing.followup },
+                { icon: '💰', text: `Estimated cost: ${pairing.cost}` },
+              ].map(row => (
+                <div key={row.text} className="flex items-center gap-2.5">
+                  <span style={{ fontSize: '0.8rem', width: 18, textAlign: 'center', flexShrink: 0 }}>{row.icon}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{row.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div
+            style={{ padding: '12px 16px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            {/* Pass / X */}
+            <button
+              onClick={handlePass}
+              className="flex items-center justify-center rounded-full transition-all active:scale-90"
+              style={{
+                width: 52, height: 52,
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                cursor: 'pointer',
+              }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+
+            {/* Plan This Night */}
+            <button
+              onClick={() => router.push('/build')}
+              className="flex items-center gap-2 rounded-[12px] px-5 py-2.5 transition-all active:scale-95"
+              style={{
+                background: 'rgba(124,58,237,0.12)',
+                border: '1px solid rgba(124,58,237,0.3)',
+                color: '#c4b5fd',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}>
+              Build My Night ✨
+            </button>
+
+            {/* Like / Heart */}
+            <button
+              onClick={handleLike}
+              className="flex items-center justify-center rounded-full transition-all active:scale-90"
+              style={{
+                width: 52, height: 52,
+                background: 'linear-gradient(135deg, #EC4899, #7C3AED)',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(236,72,153,0.45)',
+              }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="0">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Secondary cards peek */}
+        <div className="flex gap-3 mt-4 pb-2">
+          {[
+            { name: 'Rooftop at\nThe Line Hotel', rating: '4.7', img: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=200&q=75', details: ['Sunset views', 'Great cocktails', 'No reservation needed', 'Estimated cost: $$'] },
+            { name: 'Loro\nAsian Smokehouse', rating: '4.6', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&q=75', details: ['Fun atmosphere', 'Group-friendly', 'Reservation: 7:00 PM', 'Estimated cost: $$$'] },
+          ].map((card, i) => (
+            <div key={i} className="flex-1 rounded-[18px] overflow-hidden" style={{ background: '#151518', border: '1px solid #25252B' }}>
+              <div style={{ position: 'relative', height: 100 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={card.img} alt={card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 60%)' }} />
+                {/* Rating */}
+                <div style={{ position: 'absolute', top: 6, left: 8, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="#FFD60A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#FFD60A' }}>{card.rating}</span>
+                </div>
+                {/* Heart */}
+                <div style={{ position: 'absolute', top: 6, right: 8, width: 24, height: 24, borderRadius: '50%', background: 'rgba(236,72,153,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#EC4899"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                </div>
+                {/* Name over image */}
+                <div style={{ position: 'absolute', bottom: 6, left: 8, right: 8 }}>
+                  <p style={{ fontSize: '0.65rem', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'pre-line' }}>{card.name}</p>
+                </div>
+              </div>
+              {/* Details */}
+              <div style={{ padding: '8px 8px 10px' }}>
+                {card.details.map((d, di) => (
+                  <p key={di} style={{ fontSize: '0.52rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>{d}</p>
+                ))}
+              </div>
+              {/* Pass/X */}
+              <div style={{ padding: '0 8px 8px', display: 'flex', justifyContent: 'center' }}>
+                <button style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* ── Match Sheet ── */}
+      {matchedPairing && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, zIndex: 100,
+            background: 'rgba(0,0,0,0.72)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex', alignItems: 'flex-end',
+          }}
+          onClick={() => setMatchedPairing(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              background: '#111114',
+              borderTop: '1px solid #25252B',
+              borderRadius: '28px 28px 0 0',
+              padding: '20px 20px 36px',
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: '#333', margin: '0 auto 22px' }} />
+
+            {/* Label */}
+            <div style={{
+              fontSize: '0.52rem', fontWeight: 700, letterSpacing: '0.2em',
+              textTransform: 'uppercase', marginBottom: 4,
+              background: 'linear-gradient(135deg, #EC4899, #7C3AED)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>You matched ✨</div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 4 }}>
+              {matchedPairing.names.join(' + ')}
+            </h2>
+            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: 24 }}>
+              {matchedPairing.tagline}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+              {/* Just Me */}
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('dashi_pending_plan', JSON.stringify({ type: 'individual', pairing: matchedPairing })) } catch {}
+                  setMatchedPairing(null)
+                  router.push('/plans')
+                }}
+                className="w-full flex items-center gap-4 rounded-[18px] px-5 transition-all active:scale-[0.98]"
+                style={{ height: 64, background: '#1A1A1E', border: '1px solid #2A2A32', cursor: 'pointer', textAlign: 'left' }}
+              >
+                <span style={{ fontSize: '1.4rem' }}>👤</span>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>Just Me</div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>Create a personal itinerary</div>
+                </div>
+                <svg style={{ marginLeft: 'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+
+              {/* With a Group */}
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('dashi_pending_plan', JSON.stringify({ type: 'group', pairing: matchedPairing })) } catch {}
+                  setMatchedPairing(null)
+                  router.push('/groups')
+                }}
+                className="w-full flex items-center gap-4 rounded-[18px] px-5 transition-all active:scale-[0.98]"
+                style={{
+                  height: 64, cursor: 'pointer', textAlign: 'left',
+                  background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.1))',
+                  border: '1px solid rgba(124,58,237,0.35)',
+                }}
+              >
+                <span style={{ fontSize: '1.4rem' }}>👥</span>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>With a Group</div>
+                  <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.38)', marginTop: 1 }}>Pick your crew and share the plan</div>
+                </div>
+                <svg style={{ marginLeft: 'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.6)" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

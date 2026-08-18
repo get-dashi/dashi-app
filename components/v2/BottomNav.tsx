@@ -6,7 +6,7 @@ const tabs = [
   {
     id: 'explore',
     label: 'Explore',
-    href: '/v2',
+    href: '/',
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
         <defs>
@@ -28,7 +28,7 @@ const tabs = [
   {
     id: 'groups',
     label: 'Groups',
-    href: '/v2/groups',
+    href: '/groups',
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? 'url(#nav-g)' : 'rgba(255,255,255,0.28)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -41,7 +41,7 @@ const tabs = [
   {
     id: 'saved',
     label: 'Saved',
-    href: '/v2/saved',
+    href: '/saved',
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? 'url(#nav-g)' : 'none'} stroke={active ? 'url(#nav-g)' : 'rgba(255,255,255,0.28)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -51,7 +51,7 @@ const tabs = [
   {
     id: 'guides',
     label: 'Guides',
-    href: '/v2/guides',
+    href: '/guides',
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? 'url(#nav-g)' : 'rgba(255,255,255,0.28)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <line x1="8" y1="6" x2="21" y2="6"/>
@@ -66,7 +66,7 @@ const tabs = [
   {
     id: 'profile',
     label: 'Profile',
-    href: '/v2/profile',
+    href: '/profile',
     icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? 'url(#nav-g)' : 'rgba(255,255,255,0.28)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -81,7 +81,7 @@ export function V2BottomNav() {
   const router = useRouter()
 
   const isActive = (href: string) => {
-    if (href === '/v2') return pathname === '/v2'
+    if (href === '/') return pathname === '/'
     return pathname.startsWith(href)
   }
 
