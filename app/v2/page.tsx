@@ -28,6 +28,8 @@ const PAIRINGS = [
   {
     id: 'uchi-dmc',
     names: ['Uchi', 'Devil May Care'],
+    placeIds: ['ChIJz2Whyx61RIYR7mCeZje-QWw', 'ChIJW02GaiG1RIYR8ZZKBuZOWQg'],
+    liveNote: null as string | null,
     tagline: 'Perfect for a romantic night out.',
     img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80',
     rating: '4.9',
@@ -39,6 +41,8 @@ const PAIRINGS = [
   {
     id: 'hestia-white-horse',
     names: ['Hestia', 'White Horse'],
+    placeIds: ['ChIJlWBjs7-1RIYRsJt0C41E558', 'ChIJ279pHrG1RIYRicks_tZPpjs'],
+    liveNote: 'Band at 9 PM' as string | null,
     tagline: 'Wood-fire dinner, then honky-tonk.',
     img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80',
     rating: '4.8',
@@ -50,6 +54,8 @@ const PAIRINGS = [
   {
     id: 'suerte-rainey',
     names: ['Suerte', 'Rainey St.'],
+    placeIds: ['ChIJAQBE-7a1RIYRcZNYsxWYIUg'],
+    liveNote: null as string | null,
     tagline: 'Best masa in town, then the best block.',
     img: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=80',
     rating: '4.8',
@@ -59,6 +65,14 @@ const PAIRINGS = [
     tags: ['Mexican', 'Bar Crawl'],
   },
 ]
+
+type LiveStatus = {
+  openNow: boolean
+  closingAt: string | null
+  minutesUntilClose: number | null
+  closingSoon: boolean
+  lastCall: boolean
+} | null
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -84,6 +98,8 @@ export default function V2ExplorePage() {
   const [showCityMenu, setShowCityMenu] = useState(false)
   const [pairingIdx, setPairingIdx] = useState(0)
   const [swiping, setSwiping] = useState<null | 'left' | 'right'>(null)
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>(null)
+  const [liveLoading, setLiveLoading] = useState(false)
   const initialized = useRef(false)
 
   useEffect(() => {
@@ -93,6 +109,23 @@ export default function V2ExplorePage() {
   }, [])
 
   const pairing = PAIRINGS[pairingIdx % PAIRINGS.length]
+
+  // Fetch live status whenever the visible pairing changes
+  useEffect(() => {
+    const ids = pairing.placeIds?.join(',')
+    if (!ids) return
+    setLiveStatus(null)
+    setLiveLoading(true)
+    fetch(`/api/live-status?ids=${ids}`)
+      .then(r => r.json())
+      .then((data: { statuses?: { id: string; status: LiveStatus }[] }) => {
+        const statuses = (data.statuses ?? []).map(s => s.status).filter(Boolean) as NonNullable<LiveStatus>[]
+        const open = statuses.find(s => s.openNow) ?? statuses[0] ?? null
+        setLiveStatus(open)
+      })
+      .catch(() => setLiveStatus(null))
+      .finally(() => setLiveLoading(false))
+  }, [pairing.id])
 
   const handleLike = useCallback(() => {
     setSwiping('right')
@@ -297,9 +330,53 @@ export default function V2ExplorePage() {
             <h2 style={{ fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: 4 }}>
               {pairing.names.join(' + ')}
             </h2>
-            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginBottom: 14 }}>
+            <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginBottom: 10 }}>
               {pairing.tagline}
             </p>
+
+            {/* Live layer */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, minHeight: 24 }}>
+              {liveLoading && (
+                <div style={{ height: 22, width: 120, borderRadius: 100, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+              )}
+              {!liveLoading && liveStatus?.openNow && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: liveStatus.lastCall ? 'rgba(239,68,68,0.12)' : liveStatus.closingSoon ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.1)',
+                  border: `1px solid ${liveStatus.lastCall ? 'rgba(239,68,68,0.35)' : liveStatus.closingSoon ? 'rgba(245,158,11,0.35)' : 'rgba(34,197,94,0.3)'}`,
+                  borderRadius: 100, padding: '3px 9px',
+                }}>
+                  <div className="animate-pulse" style={{
+                    width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                    background: liveStatus.lastCall ? '#ef4444' : liveStatus.closingSoon ? '#f59e0b' : '#22c55e',
+                  }} />
+                  <span style={{
+                    fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.07em',
+                    color: liveStatus.lastCall ? '#ef4444' : liveStatus.closingSoon ? '#f59e0b' : '#22c55e',
+                  }}>
+                    {liveStatus.lastCall
+                      ? 'LAST CALL'
+                      : liveStatus.closingSoon
+                      ? `CLOSING SOON · ${liveStatus.minutesUntilClose} MIN`
+                      : liveStatus.closingAt
+                      ? `OPEN · CLOSES ${liveStatus.closingAt}`
+                      : 'OPEN NOW'}
+                  </span>
+                </div>
+              )}
+              {!liveLoading && pairing.liveNote && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: 'rgba(168,85,247,0.1)',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                  borderRadius: 100, padding: '3px 9px',
+                }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.07em', color: '#c4b5fd' }}>
+                    🎵 {pairing.liveNote}
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Detail rows */}
             <div className="flex flex-col gap-2.5 mb-4">
