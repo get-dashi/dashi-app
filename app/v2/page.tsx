@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation'
 import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import type { Venue } from '@/lib/types'
 
-// Quick filter chips exactly matching the mockup
+// Quick filter chips — all occasions, one axis
 const CHIPS = [
-  { id: 'date',  emoji: '❤️', label: 'Date night', mood: 'date' },
-  { id: 'happy', emoji: '🍹', label: 'Drinks',     mood: 'happy' },
-  { id: 'all',   emoji: '🍽',  label: 'Dinner',     mood: 'all' },
-  { id: 'roof',  emoji: '👥', label: 'Pool day',   mood: 'roof' },
-  { id: 'music', emoji: '🎵', label: 'Live Music',  mood: 'music' },
-  { id: 'dance', emoji: '👥', label: 'Group Night', mood: 'dance' },
+  { id: 'date',      emoji: '❤️', label: 'Date night',  mood: 'date' },
+  { id: 'group',     emoji: '👥', label: 'Group night', mood: 'dance' },
+  { id: 'happy',     emoji: '🥂', label: 'Happy hour',  mood: 'happy' },
+  { id: 'celebrate', emoji: '🎉', label: 'Celebration', mood: 'celebrate' },
+  { id: 'late',      emoji: '🌙', label: 'Late night',  mood: 'late' },
+  { id: 'vibe',      emoji: '✨', label: 'Good vibes',  mood: 'vibe' },
 ]
 
 const CITIES: Record<string, string> = {
@@ -166,7 +166,7 @@ export default function V2ExplorePage() {
 
       {/* ── Greeting ── */}
       <div className="px-5 pt-3 pb-0 flex-shrink-0">
-        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', marginBottom: 2 }}>
+        <p suppressHydrationWarning style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', marginBottom: 2 }}>
           {getGreeting()}, Ricky 👋
         </p>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 12 }}>
@@ -175,22 +175,6 @@ export default function V2ExplorePage() {
             tonight?
           </span>
         </h1>
-
-        {/* AI Search */}
-        <button
-          className="w-full flex items-center gap-2.5 rounded-2xl px-4 mb-3 transition-all active:scale-[0.99]"
-          style={{ height: 46, background: '#151518', border: '1px solid #25252B' }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeLinecap="round">
-            <defs>
-              <linearGradient id="search-g" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#7C3AED"/><stop offset="100%" stopColor="#EC4899"/>
-              </linearGradient>
-            </defs>
-            <path d="M12 2l1.09 3.26L16.5 4l-2.18 2.5L15.5 10l-3.5-2.24L8.5 10l1.18-3.5L7.5 4l3.41 1.26L12 2z" fill="url(#search-g)"/>
-          </svg>
-          <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Ask Dashi anything...</span>
-        </button>
 
         {/* Quick chips */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
@@ -213,6 +197,22 @@ export default function V2ExplorePage() {
             )
           })}
         </div>
+
+        {/* AI Search — secondary affordance */}
+        <button
+          className="w-full flex items-center gap-2.5 rounded-2xl px-4 mb-3 transition-all active:scale-[0.99]"
+          style={{ height: 42, background: '#151518', border: '1px solid #25252B' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeLinecap="round">
+            <defs>
+              <linearGradient id="search-g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#7C3AED"/><stop offset="100%" stopColor="#EC4899"/>
+              </linearGradient>
+            </defs>
+            <path d="M12 2l1.09 3.26L16.5 4l-2.18 2.5L15.5 10l-3.5-2.24L8.5 10l1.18-3.5L7.5 4l3.41 1.26L12 2z" fill="url(#search-g)"/>
+          </svg>
+          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>Ask Dashi anything…</span>
+        </button>
       </div>
 
       {/* ── Tonight's Match ── */}
