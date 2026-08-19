@@ -58,6 +58,7 @@ export default function ExplorePage() {
   const [city, setCity]               = useState('austin')
   const [showCityMenu, setShowCityMenu] = useState(false)
   const [mode, setMode]               = useState<'match' | 'discover'>('discover')
+  const [deckResetKey, setDeckResetKey] = useState(0)
   // match mode state
   const [pairingIdx, setPairingIdx]   = useState(0)
   const [swiping, setSwiping]         = useState<null | 'left' | 'right'>(null)
@@ -69,6 +70,11 @@ export default function ExplorePage() {
 
   // Venues for swipe deck
   const { saveVenue } = useSaves()
+
+  const resetDeck = useCallback(() => {
+    try { localStorage.removeItem(`dashi_deck_${city}-${mood}`) } catch {}
+    setDeckResetKey(k => k + 1)
+  }, [city, mood])
 
   // Untagged venues (no city field) belong to Austin only
   const cityVenues = ALL_FEATURED_VENUES.filter(v =>
@@ -191,14 +197,35 @@ export default function ExplorePage() {
 
         {/* ── DISCOVER MODE: full card stack ── */}
         {mode === 'discover' && (
-          <V2CardStack
-            key={`${city}-${mood}`}
-            persistKey={`${city}-${mood}`}
-            venues={swipeDeck}
-            onLike={(v) => saveVenue(v)}
-            onPass={(_v) => { /* pass */ }}
-            onEmpty={() => {}}
-          />
+          <>
+            <V2CardStack
+              key={`${city}-${mood}-${deckResetKey}`}
+              persistKey={`${city}-${mood}`}
+              venues={swipeDeck}
+              onLike={(v) => saveVenue(v)}
+              onPass={(_v) => { /* pass */ }}
+              onEmpty={() => {}}
+            />
+            {/* Reset button — top right of the card area */}
+            <button
+              onClick={resetDeck}
+              style={{
+                position: 'absolute', top: 10, right: 10, zIndex: 30,
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 100, padding: '6px 12px',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 4v6h-6"/>
+                <path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>Reset</span>
+            </button>
+          </>
         )}
 
         {/* ── MATCH MODE: curated pairing card ── */}
