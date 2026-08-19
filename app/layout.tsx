@@ -16,6 +16,19 @@ export const metadata: Metadata = {
   title: 'Dashi — Discover your city.',
   description: 'Swipe through the best bars and restaurants in Austin. AI-powered venue discovery.',
   icons: { icon: '/favicon.ico' },
+  openGraph: {
+    title: 'Dashi — Discover your city.',
+    description: 'Swipe through the best bars, restaurants, and nightlife in Austin.',
+    url: 'https://app.get-dashi.com',
+    siteName: 'Dashi',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Dashi — Discover your city.',
+    description: 'Swipe through the best bars, restaurants, and nightlife in Austin.',
+  },
 }
 
 export const viewport: Viewport = {
