@@ -9,15 +9,33 @@ interface CardStackProps {
   onLike: (venue: Venue) => void
   onPass: (venue: Venue) => void
   onEmpty: () => void
+  persistKey?: string   // localStorage key to survive tab navigation
 }
 
-export function V2CardStack({ venues, onLike, onPass, onEmpty }: CardStackProps) {
+export function V2CardStack({ venues, onLike, onPass, onEmpty, persistKey }: CardStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const cardRef = useRef<HTMLDivElement | null>(null)
   const startX = useRef(0)
   const startY = useRef(0)
   const currentX = useRef(0)
+  const lsKey = persistKey ? `dashi_deck_${persistKey}` : null
+
+  // Restore saved position on mount
+  useEffect(() => {
+    if (!lsKey) return
+    try {
+      const saved = parseInt(localStorage.getItem(lsKey) ?? '0', 10)
+      if (saved > 0 && saved < venues.length) setCurrentIndex(saved)
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lsKey]) // only on mount / key change
+
+  // Persist whenever index advances
+  useEffect(() => {
+    if (!lsKey) return
+    try { localStorage.setItem(lsKey, String(currentIndex)) } catch { /* ignore */ }
+  }, [currentIndex, lsKey])
 
   // Reset index when venues change (city/mood switch)
   const prevVenueCount = useRef(venues.length)

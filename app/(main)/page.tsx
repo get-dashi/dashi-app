@@ -193,6 +193,7 @@ export default function ExplorePage() {
         {mode === 'discover' && (
           <V2CardStack
             key={`${city}-${mood}`}
+            persistKey={`${city}-${mood}`}
             venues={swipeDeck}
             onLike={(v) => saveVenue(v)}
             onPass={(_v) => { /* pass */ }}
