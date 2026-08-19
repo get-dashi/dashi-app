@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import { V2CardStack } from '@/components/v2/CardStack'
+import { useSaves } from '@/contexts/SavesContext'
 import type { Venue } from '@/lib/types'
 
 type Pairing = typeof PAIRINGS[number]
@@ -67,14 +68,18 @@ export default function ExplorePage() {
   const pairing = PAIRINGS[pairingIdx % PAIRINGS.length]
 
   // Venues for swipe deck
-  const deckVenues = ALL_FEATURED_VENUES.filter(v => {
-    const cityMatch = !v.city || v.city === city
-    if (!cityMatch) return false
+  const { saveVenue } = useSaves()
+
+  // Untagged venues (no city field) belong to Austin only
+  const cityVenues = ALL_FEATURED_VENUES.filter(v =>
+    city === 'austin' ? (!v.city || v.city === 'austin') : v.city === city
+  )
+  const deckVenues = cityVenues.filter(v => {
     if (mood === 'all') return true
     const tags = (MOOD_TAGS[mood] ?? []).map(t => t.toLowerCase())
     return v.tags?.some(t => tags.some(m => t.toLowerCase().includes(m)))
   })
-  const swipeDeck = deckVenues.length > 0 ? deckVenues : ALL_FEATURED_VENUES.filter(v => !v.city || v.city === city)
+  const swipeDeck = deckVenues.length > 0 ? deckVenues : cityVenues
 
   // Live status for match card
   useEffect(() => {
@@ -189,8 +194,8 @@ export default function ExplorePage() {
           <V2CardStack
             key={`${city}-${mood}`}
             venues={swipeDeck}
-            onLike={(v) => { console.log('liked', v.name) }}
-            onPass={(v) => { console.log('passed', v.name) }}
+            onLike={(v) => saveVenue(v)}
+            onPass={(_v) => { /* pass */ }}
             onEmpty={() => {}}
           />
         )}
