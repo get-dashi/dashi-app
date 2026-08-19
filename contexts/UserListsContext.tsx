@@ -7,14 +7,19 @@ export interface UserList {
   venueIds: string[]
   createdAt: number
   sourceListId?: string
+  published?: boolean
+  publishedAt?: number
+  emoji?: string
 }
 
 interface UserListsContextType {
   userLists: UserList[]
-  createList: (name: string, venueIds: string[], sourceListId?: string) => UserList
+  createList: (name: string, venueIds: string[], opts?: { sourceListId?: string; emoji?: string }) => UserList
   deleteList: (id: string) => void
   addVenueToList: (listId: string, venueId: string) => void
   removeVenueFromList: (listId: string, venueId: string) => void
+  publishList: (id: string) => void
+  unpublishList: (id: string) => void
   hasListForSource: (sourceListId: string) => boolean
   getListBySource: (sourceListId: string) => UserList | undefined
 }
@@ -28,8 +33,8 @@ export function UserListsProvider({ children }: { children: ReactNode }) {
     try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
   })
 
-  const createList = useCallback((name: string, venueIds: string[], sourceListId?: string): UserList => {
-    const list: UserList = { id: `ul_${Date.now()}`, name, venueIds, createdAt: Date.now(), sourceListId }
+  const createList = useCallback((name: string, venueIds: string[], opts?: { sourceListId?: string; emoji?: string }): UserList => {
+    const list: UserList = { id: `ul_${Date.now()}`, name, venueIds, createdAt: Date.now(), sourceListId: opts?.sourceListId, emoji: opts?.emoji }
     setUserLists(prev => { const next = [...prev, list]; localStorage.setItem(LS_KEY, JSON.stringify(next)); return next })
     return list
   }, [])
@@ -42,11 +47,17 @@ export function UserListsProvider({ children }: { children: ReactNode }) {
   const removeVenueFromList = useCallback((listId: string, venueId: string) =>
     setUserLists(prev => { const next = prev.map(l => l.id === listId ? { ...l, venueIds: l.venueIds.filter(id => id !== venueId) } : l); localStorage.setItem(LS_KEY, JSON.stringify(next)); return next }), [])
 
+  const publishList = useCallback((id: string) =>
+    setUserLists(prev => { const next = prev.map(l => l.id === id ? { ...l, published: true, publishedAt: Date.now() } : l); localStorage.setItem(LS_KEY, JSON.stringify(next)); return next }), [])
+
+  const unpublishList = useCallback((id: string) =>
+    setUserLists(prev => { const next = prev.map(l => l.id === id ? { ...l, published: false, publishedAt: undefined } : l); localStorage.setItem(LS_KEY, JSON.stringify(next)); return next }), [])
+
   const hasListForSource = useCallback((sourceListId: string) => userLists.some(l => l.sourceListId === sourceListId), [userLists])
   const getListBySource = useCallback((sourceListId: string) => userLists.find(l => l.sourceListId === sourceListId), [userLists])
 
   return (
-    <UserListsContext.Provider value={{ userLists, createList, deleteList, addVenueToList, removeVenueFromList, hasListForSource, getListBySource }}>
+    <UserListsContext.Provider value={{ userLists, createList, deleteList, addVenueToList, removeVenueFromList, publishList, unpublishList, hasListForSource, getListBySource }}>
       {children}
     </UserListsContext.Provider>
   )

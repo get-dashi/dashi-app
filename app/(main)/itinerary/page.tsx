@@ -473,7 +473,7 @@ export default function ListsPage() {
       showToast('Already in My Lists', 'success')
       return
     }
-    createList(list.title, venues.map(v => v.id), list.id)
+    createList(list.title, venues.map(v => v.id), { sourceListId: list.id })
     let savedCount = 0
     for (const venue of venues) {
       if (!isSaved(venue.id)) {
