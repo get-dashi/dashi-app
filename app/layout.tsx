@@ -9,6 +9,7 @@ import { SavesProvider } from '@/contexts/SavesContext'
 import { VisitsProvider } from '@/contexts/VisitsContext'
 import { RankingsProvider } from '@/contexts/RankingsContext'
 import { UserListsProvider } from '@/contexts/UserListsContext'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </GeolocationProvider>
           </ToastProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )
