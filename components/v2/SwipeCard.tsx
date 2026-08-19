@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import type { Venue } from '@/lib/types'
 import { getMichelinTier } from '@/lib/venues'
+import { useGeo } from '@/contexts/GeolocationContext'
+import { VENUE_COORDS } from '@/lib/venue-coordinates'
+import { haversineMiles, formatMiles } from '@/lib/distance'
 
 interface SwipeCardProps {
   venue: Venue
@@ -40,6 +43,16 @@ function useVenuePhoto(venue: Venue) {
 export function V2SwipeCard({ venue, position, style, onRef }: SwipeCardProps) {
   const michelinTier = getMichelinTier(venue.name)
   const imgSrc = useVenuePhoto(venue)
+  const { lat: userLat, lng: userLng } = useGeo()
+
+  // Prefer live distance if we have both user location + venue coords
+  const liveCoords = VENUE_COORDS[venue.id] ?? (venue.lat && venue.lng ? { lat: venue.lat, lng: venue.lng } : null)
+  const distLabel = useMemo(() => {
+    if (userLat && userLng && liveCoords) {
+      return formatMiles(haversineMiles(userLat, userLng, liveCoords.lat, liveCoords.lng))
+    }
+    return venue.dist
+  }, [userLat, userLng, liveCoords, venue.dist])
 
   const positionStyles: Record<string, React.CSSProperties> = {
     top:    { zIndex: 10, transform: 'scale(1) translateY(0px)' },
@@ -156,7 +169,7 @@ export function V2SwipeCard({ venue, position, style, onRef }: SwipeCardProps) {
         <div className="flex items-center gap-2 mb-3" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem' }}>
           <span>{venue.type}</span>
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', display: 'inline-block' }} />
-          <span>{venue.dist}</span>
+          <span>{distLabel}</span>
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', display: 'inline-block' }} />
           <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#FFD60A', fontWeight: 700 }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="#FFD60A"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>

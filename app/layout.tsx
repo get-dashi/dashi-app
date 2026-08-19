@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SplashSlideshow } from '@/components/layout/SplashSlideshow'
+import { GeolocationProvider } from '@/contexts/GeolocationContext'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { SavesProvider } from '@/contexts/SavesContext'
 import { VisitsProvider } from '@/contexts/VisitsContext'
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-[#0d0d0f] text-[#f5f5f7] font-sans antialiased overflow-hidden h-screen">
         <AuthProvider>
           <ToastProvider>
+            <GeolocationProvider>
             <SavesProvider>
             <VisitsProvider>
             <RankingsProvider>
@@ -56,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </RankingsProvider>
             </VisitsProvider>
             </SavesProvider>
+            </GeolocationProvider>
           </ToastProvider>
         </AuthProvider>
       </body>
