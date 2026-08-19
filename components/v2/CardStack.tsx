@@ -65,16 +65,14 @@ export function V2CardStack({ venues, onLike, onPass, onEmpty }: CardStackProps)
     const dx = direction === 'right' ? 500 : -500
     const rotation = direction === 'right' ? 20 : -20
     el.style.transform = `translateX(${dx}px) rotate(${rotation}deg) scale(0.95)`
-    el.style.transition = 'transform 0.38s cubic-bezier(0.4,0,0.6,1)'
+    el.style.transition = 'transform 0.36s cubic-bezier(0.4,0,0.6,1)'
     setTimeout(() => {
       if (direction === 'right') onLike(venue)
       else onPass(venue)
       setCurrentIndex(i => i + 1)
-      if (el) {
-        el.style.transform = 'scale(1) translateY(0px)'
-        el.style.transition = 'none'
-      }
-    }, 350)
+      // Don't touch el — it's a stale ref to the card that just flew out.
+      // React unmounts it; resetting the transform causes the flash.
+    }, 340)
   }, [onLike, onPass])
 
   // Touch handlers
