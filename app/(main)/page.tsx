@@ -6,6 +6,7 @@ import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import { V2CardStack } from '@/components/v2/CardStack'
 import { useSaves } from '@/contexts/SavesContext'
 import type { Venue } from '@/lib/types'
+import { HappyHourSection } from '@/components/explore/HappyHourSection'
 
 type Pairing = typeof PAIRINGS[number]
 
@@ -195,8 +196,15 @@ export default function ExplorePage() {
       {/* ── Main content: fills remaining height ── */}
       <div className="flex-1 relative overflow-hidden px-4 pb-2">
 
+        {/* ── HAPPY HOUR MODE ── */}
+        {mood === 'happy' && (
+          <div className="overflow-y-auto h-full no-scrollbar">
+            <HappyHourSection city={city} />
+          </div>
+        )}
+
         {/* ── DISCOVER MODE: full card stack ── */}
-        {mode === 'discover' && (
+        {mood !== 'happy' && mode === 'discover' && (
           <>
             <V2CardStack
               key={`${city}-${mood}-${deckResetKey}`}
@@ -206,30 +214,11 @@ export default function ExplorePage() {
               onPass={(_v) => { /* pass */ }}
               onEmpty={() => {}}
             />
-            {/* Reset button — top right of the card area */}
-            <button
-              onClick={resetDeck}
-              style={{
-                position: 'absolute', top: 10, right: 10, zIndex: 30,
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: 100, padding: '6px 12px',
-                cursor: 'pointer',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 4v6h-6"/>
-                <path d="M1 20v-6h6"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-              </svg>
-              <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>Reset</span>
-            </button>
           </>
         )}
 
         {/* ── MATCH MODE: curated pairing card ── */}
-        {mode === 'match' && (
+        {mood !== 'happy' && mode === 'match' && (
           <div className="overflow-y-auto h-full no-scrollbar">
             <div className="flex items-center justify-between mb-3 pt-1">
               <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Tonight&apos;s Match ✨</span>
@@ -349,7 +338,6 @@ export default function ExplorePage() {
         </div>
       )}
 
-      {/* ── Match sheet (after liking a pairing) ── */}
       {matchedPairing && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setMatchedPairing(null)}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#111114', borderTop: '1px solid #25252B', borderRadius: '28px 28px 0 0', padding: '20px 20px 36px' }}>
