@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ALL_FEATURED_VENUES } from '@/lib/venues'
 import type { Venue } from '@/lib/types'
+import { HappyHourSection } from '@/components/explore/HappyHourSection'
 
 type Pairing = typeof PAIRINGS[number]
 
@@ -239,7 +240,15 @@ export default function V2ExplorePage() {
 
       </div>
 
+      {/* ── Happy Hour Section ── */}
+      {mood === 'happy' && (
+        <div className="flex-1 overflow-y-auto px-5 pb-2 no-scrollbar">
+          <HappyHourSection city={city} />
+        </div>
+      )}
+
       {/* ── Tonight's Match ── */}
+      {mood !== 'happy' && (
       <div className="flex-1 overflow-y-auto px-5 pb-2 no-scrollbar">
         <div className="flex items-center justify-between mb-3">
           <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Tonight&apos;s Match ✨</span>
@@ -479,6 +488,7 @@ export default function V2ExplorePage() {
           ))}
         </div>
       </div>
+      )}
       {/* ── Match Sheet ── */}
       {matchedPairing && (
         <div

@@ -51,24 +51,32 @@ const PAST_PLANS = [
   },
 ]
 
+type BuiltStop = {
+  time: string; type: string; name: string;
+  sub: string; emoji: string; open: boolean; bookable: boolean;
+}
+
 export default function V2PlansPage() {
   const router = useRouter()
   const [tab, setTab] = useState<'tonight' | 'past'>('tonight')
   const [pendingPairing, setPendingPairing] = useState<{ names: string[]; tagline: string; cost?: string; reservation?: string } | null>(null)
+  const [builtStops, setBuiltStops] = useState<BuiltStop[] | null>(null)
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('dashi_pending_plan')
       if (!raw) return
       const data = JSON.parse(raw)
+      localStorage.removeItem('dashi_pending_plan')
       if (data?.type === 'individual' && data?.pairing) {
         setPendingPairing(data.pairing)
-        localStorage.removeItem('dashi_pending_plan')
+      } else if (data?.type === 'buildMyNight' && Array.isArray(data?.stops)) {
+        setBuiltStops(data.stops)
       }
     } catch { /* ignore */ }
   }, [])
 
-  const tonightStops = pendingPairing ? stopsFromPairing(pendingPairing) : FALLBACK_STOPS
+  const tonightStops = builtStops ?? (pendingPairing ? stopsFromPairing(pendingPairing) : FALLBACK_STOPS)
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: '#09090B' }}>
@@ -106,8 +114,22 @@ export default function V2PlansPage() {
 
         {tab === 'tonight' && (
           <div className="pt-2">
-            {/* Match badge or group badge */}
-            {pendingPairing ? (
+            {/* Source badge */}
+            {builtStops ? (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div style={{ fontSize: '1.2rem' }}>✨</div>
+                  <div>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 800 }}>{builtStops.length} stops tonight</p>
+                    <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>Built from your saved venues</p>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.6rem', fontWeight: 800, padding: '4px 10px', borderRadius: 100,
+                  background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)', color: '#c4b5fd',
+                }}>My Night ✨</span>
+              </div>
+            ) : pendingPairing ? (
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   <div style={{ fontSize: '1.2rem' }}>✨</div>
