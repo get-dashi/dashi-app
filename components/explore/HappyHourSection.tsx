@@ -170,32 +170,61 @@ function VenueCard({ v }: { v: HappyHourVenue }) {
         </div>
       )}
 
-      {/* ── Deals ── */}
+      {/* ── Specials ── */}
       {topDeals.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: hasMore ? 6 : 0 }}>
+        <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, overflow: 'hidden' }}>
+          {/* Section header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 6px' }}>
+            <span style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>Specials</span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {['food','drink','combo'].filter(cat => topDeals.some(d => d.category === cat)).map(cat => (
+                <span key={cat} style={{ fontSize: '0.55rem', fontWeight: 700, color: DEAL_TEXT[cat], opacity: 0.8 }}>
+                  {cat === 'food' ? '🍽' : cat === 'drink' ? '🍹' : '🎯'} {cat}
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* Deal rows */}
           {topDeals.map((deal, i) => (
             <div key={i} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              background: DEAL_COLORS[deal.category] ?? 'rgba(255,255,255,0.06)',
-              border: `1px solid ${DEAL_BORDER[deal.category] ?? 'rgba(255,255,255,0.1)'}`,
-              borderRadius: 7, padding: '3px 8px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '7px 12px',
+              borderTop: i === 0 ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,255,255,0.04)',
+              background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
             }}>
-              <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
-                {deal.description}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{
+                  width: 3, height: 20, borderRadius: 2, flexShrink: 0,
+                  background: DEAL_TEXT[deal.category] ?? 'rgba(255,255,255,0.2)',
+                  opacity: 0.7,
+                }} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'rgba(255,255,255,0.75)' }}>
+                  {deal.description}
+                </span>
+              </div>
               {(deal.price ?? deal.discount) && (
-                <span style={{ fontSize: '0.6rem', fontWeight: 800, color: DEAL_TEXT[deal.category] ?? '#fff' }}>
+                <span style={{
+                  fontSize: '0.8rem', fontWeight: 800,
+                  color: DEAL_TEXT[deal.category] ?? '#fff',
+                  flexShrink: 0, marginLeft: 8,
+                }}>
                   {deal.price ?? deal.discount}
                 </span>
               )}
             </div>
           ))}
+          {/* Show more */}
           {hasMore && !expanded && (
             <button
               onClick={() => setExpanded(true)}
-              style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(124,58,237,0.85)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 2px' }}
+              style={{
+                width: '100%', padding: '8px', fontSize: '0.65rem', fontWeight: 700,
+                color: 'rgba(124,58,237,0.85)', background: 'rgba(124,58,237,0.05)',
+                border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)',
+                cursor: 'pointer',
+              }}
             >
-              +{(v.deals?.length ?? 0) - 4} more
+              Show {(v.deals?.length ?? 0) - 4} more specials
             </button>
           )}
         </div>
