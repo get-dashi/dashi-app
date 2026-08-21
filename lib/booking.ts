@@ -12,13 +12,18 @@ export function getBookingUrl(venue: Venue, partySize = 2): string | null {
   const dateStr = date.toISOString().slice(0, 16)
 
   switch (bookingPlatform) {
-    case 'opentable':
+    case 'opentable': {
       if (!bookingId) return null
-      return `https://www.opentable.com/r/${bookingId}?covers=${partySize}&dateTime=${dateStr}&ref=${AFFILIATE_TAGS.opentable}`
+      // OT uses p= (party size) and sd= (date-time ISO) per their actual URL format
+      // Legacy OT slugs (no /r/ prefix) are stored with a leading '/'
+      const otPath = bookingId.startsWith('/') ? bookingId : `/r/${bookingId}`
+      return `https://www.opentable.com${otPath}?p=${partySize}&sd=${dateStr}`
+    }
 
     case 'resy':
       if (!bookingId) return null
-      return `https://resy.com/cities/${getResyCity(venue.city ?? 'austin')}/venues/${bookingId}?date=${dateStr.slice(0, 10)}&seats=${partySize}&affiliateId=${AFFILIATE_TAGS.resy}`
+      // Clean URL — no params until we confirm affiliate program enrollment
+      return `https://resy.com/cities/${getResyCity(venue.city ?? 'austin')}/venues/${bookingId}`
 
     case 'sevenrooms':
       if (!bookingId) return null
@@ -41,13 +46,35 @@ export function getBookingUrl(venue: Venue, partySize = 2): string | null {
   }
 }
 
-function getResyCity(city: string): string {
+export function getResyCity(city: string): string {
+  // Resy city slugs — confirmed from actual URLs Aug 2026
   const map: Record<string, string> = {
-    austin: 'aus',
-    atlanta: 'atl',
-    monterrey: 'mty',
+    austin:    'austin-tx',
+    nyc:       'new-york',
+    chicago:   'chicago',
+    la:        'los-angeles',
+    miami:     'miami',
+    atlanta:   'atlanta',
+    dallas:    'dallas',
+    houston:   'houston',
+    monterrey: 'monterrey',
+    cdmx:      'mexico-city',
   }
-  return map[city] ?? 'aus'
+  return map[city] ?? 'austin-tx'
+}
+
+export function getOpenTableCity(city: string): string {
+  const map: Record<string, string> = {
+    nyc:       'new-york-city',
+    la:        'los-angeles',
+    chicago:   'chicago',
+    miami:     'miami-beach',
+    austin:    'austin',
+    dallas:    'dallas',
+    houston:   'houston',
+    atlanta:   'atlanta',
+  }
+  return map[city] ?? 'austin'
 }
 
 export function getBookingLabel(platform: Venue['bookingPlatform']): string {

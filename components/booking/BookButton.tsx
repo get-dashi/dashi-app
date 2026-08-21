@@ -27,6 +27,19 @@ export function BookButton({ venue, partySize = 2, size = 'md', className = '' }
   const handleBook = () => {
     if (!url) return
     setLoading(true)
+
+    // Fire-and-forget click tracking — never delays the booking
+    fetch('/api/booking-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        venueId:   venue.id,
+        venueName: venue.name,
+        platform:  venue.bookingPlatform,
+        city:      venue.city ?? 'austin',
+      }),
+    }).catch(() => {})
+
     if (venue.bookingPlatform === 'phone') {
       window.location.href = url
     } else {

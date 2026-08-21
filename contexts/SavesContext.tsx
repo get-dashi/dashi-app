@@ -21,6 +21,7 @@ interface SavesContextType {
   isSaved: (venueId: string) => boolean
   saveVenue: (venue: Venue) => void
   unsaveVenue: (venueId: string) => void
+  reorderVenues: (next: Venue[]) => void
   clearAllSaves: () => void
   savesCount: number
 }
@@ -30,6 +31,7 @@ const SavesContext = createContext<SavesContextType>({
   isSaved: () => false,
   saveVenue: () => {},
   unsaveVenue: () => {},
+  reorderVenues: () => {},
   clearAllSaves: () => {},
   savesCount: 0,
 })
@@ -112,6 +114,11 @@ export function SavesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
+  const reorderVenues = useCallback((next: Venue[]) => {
+    setSavedVenues(next)
+    writeLS(next)
+  }, [])
+
   const clearAllSaves = useCallback(() => {
     setSavedVenues([])
     writeLS([])
@@ -127,6 +134,7 @@ export function SavesProvider({ children }: { children: React.ReactNode }) {
       isSaved,
       saveVenue,
       unsaveVenue,
+      reorderVenues,
       clearAllSaves,
       savesCount: savedVenues.length,
     }}>
