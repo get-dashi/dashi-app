@@ -18,7 +18,9 @@ export function V2CardStack({ venues, onLike, onPass, onEmpty, persistKey }: Car
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const cardRef = useRef<HTMLDivElement | null>(null)
   const startX = useRef(0)
+  const startY = useRef(0)
   const currentX = useRef(0)
+  const isHorizontalSwipe = useRef<boolean | null>(null)  // null = undecided
   const historyRef = useRef<{ venue: Venue; action: 'like' | 'pass' }[]>([])
   const lsKey = persistKey ? `dashi_deck_${persistKey}` : null
 
@@ -127,16 +129,38 @@ export function V2CardStack({ venues, onLike, onPass, onEmpty, persistKey }: Car
   // Touch / mouse drag
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
     currentX.current = 0
-    setIsDragging(true)
+    isHorizontalSwipe.current = null  // reset direction lock
+    setIsDragging(false)
   }, [])
+
   const onTouchMove = useCallback((e: React.TouchEvent) => {
     const dx = e.touches[0].clientX - startX.current
+    const dy = e.touches[0].clientY - startY.current
+
+    // Determine swipe direction on first meaningful movement
+    if (isHorizontalSwipe.current === null) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return  // too small to decide
+      isHorizontalSwipe.current = Math.abs(dx) > Math.abs(dy)
+    }
+
+    // Only handle horizontal swipes — let vertical pass through to native scroll
+    if (!isHorizontalSwipe.current) return
+
+    e.preventDefault()  // prevent native scroll during horizontal swipe
     currentX.current = dx
+    setIsDragging(true)
     applyTransform(dx)
   }, [applyTransform])
+
   const onTouchEnd = useCallback(() => {
     setIsDragging(false)
+    if (!isHorizontalSwipe.current) {
+      isHorizontalSwipe.current = null
+      return
+    }
+    isHorizontalSwipe.current = null
     const venue = venues[currentIndex]
     if (!venue) return
     if (currentX.current > 90) flyOut('right', venue)
