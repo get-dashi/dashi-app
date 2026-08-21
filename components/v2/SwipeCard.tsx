@@ -72,9 +72,9 @@ export function V2SwipeCard({ venue, position, style, onRef }: SwipeCardProps) {
         overflow: 'hidden',
         boxShadow: '0 24px 72px rgba(0,0,0,0.75)',
         transformOrigin: 'bottom center',
-        // Always transition — so second→top animates smoothly.
-        // The drag handler overrides this with el.style.transition='none' during drags.
         transition: 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
+        willChange: 'transform',          // promote to GPU layer — kills repaint glitch
+        backfaceVisibility: 'hidden',     // extra compositing hint
         cursor: position === 'top' ? 'grab' : 'default',
         ...positionStyles[position],
         ...style,
