@@ -27,33 +27,43 @@ export async function GET(request: NextRequest) {
   // For non-Austin cities, include city name in query to avoid wrong-city matches
   const query = city !== 'austin' ? `${name} ${cfg.label}` : name
 
-  try {
-    const searchUrl = [
+  async function searchPlaces(q: string) {
+    const url = [
       'https://maps.googleapis.com/maps/api/place/findplacefromtext/json',
-      `?input=${encodeURIComponent(query)}`,
+      `?input=${encodeURIComponent(q)}`,
       `&inputtype=textquery`,
       `&locationbias=circle:${cfg.radius}@${cfg.location}`,
       `&fields=photos,place_id,name,geometry`,
       `&key=${API_KEY}`,
     ].join('')
+    const res = await fetch(url, { next: { revalidate: 86400 } })
+    return res.json() as Promise<{
+      candidates?: { name?: string; photos?: { photo_reference: string }[] }[]
+    }>
+  }
 
-    const res = await fetch(searchUrl, { next: { revalidate: 86400 } })
-    const data = await res.json() as {
-      candidates?: {
-        name?: string
-        photos?: { photo_reference: string }[]
-        geometry?: { location: { lat: number; lng: number } }
-      }[]
+  function isGoodMatch(candidateName: string, searchName: string) {
+    const cn = candidateName.toLowerCase()
+    const sn = searchName.toLowerCase()
+    const firstWord = sn.split(' ')[0]
+    if (firstWord.length <= 3) return true
+    return cn.includes(firstWord) || sn.includes(cn.split(' ')[0])
+  }
+
+  try {
+    // First attempt: name as-is (with city prefix for non-Austin)
+    let data = await searchPlaces(query)
+    let candidate = data.candidates?.[0]
+
+    // Second attempt: append " Austin TX" if first attempt failed or no photos
+    if (!candidate?.photos?.[0]) {
+      data = await searchPlaces(`${name} Austin TX`)
+      candidate = data.candidates?.[0]
     }
 
-    const candidate = data.candidates?.[0]
     if (!candidate?.photos?.[0]) return NextResponse.json({ imgUrl: null })
 
-    // Sanity check: if the candidate name looks completely unrelated, skip it
-    const candidateName = (candidate.name ?? '').toLowerCase()
-    const searchName = name.toLowerCase()
-    const firstWord = searchName.split(' ')[0]
-    if (firstWord.length > 3 && !candidateName.includes(firstWord) && !searchName.includes(candidateName.split(' ')[0])) {
+    if (!isGoodMatch(candidate.name ?? '', name)) {
       return NextResponse.json({ imgUrl: null })
     }
 

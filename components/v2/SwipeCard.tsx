@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { getBookingUrl, getBookingLabel } from '@/lib/booking'
 import Image from 'next/image'
 import type { Venue } from '@/lib/types'
 import { getMichelinTier } from '@/lib/venues'
@@ -204,40 +205,46 @@ export function V2SwipeCard({ venue, position, style, onRef }: SwipeCardProps) {
           </div>
         )}
 
-        {/* Reserve CTA */}
-        {venue.bookingPlatform && (
+        {/* Reserve CTA — restaurant/bar platforms */}
+        {venue.bookingPlatform && (() => {
+          const url = getBookingUrl(venue)
+          if (!url) return null
+          return (
+            <a
+              href={url}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 rounded-[12px] transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)', color: '#fff', fontWeight: 800, fontSize: '0.8rem', height: 44, boxShadow: '0 6px 20px rgba(124,58,237,0.4)', marginBottom: 0 }}
+              onClick={e => {
+                e.stopPropagation()
+                fetch('/api/booking-click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, venueName: venue.name, platform: venue.bookingPlatform, city: venue.city ?? 'austin' }) }).catch(() => {})
+              }}
+            >
+              {getBookingLabel(venue.bookingPlatform)}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          )
+        })()}
+
+        {/* Day Pass CTA — ResortPass pools */}
+        {venue.resortPassUrl && !venue.bookingPlatform && (
           <a
-            href={venue.bookingPlatform === 'resy' ? `https://resy.com/cities/austin/venues/${venue.bookingId ?? ''}` : '#'}
+            href={venue.resortPassUrl}
             target="_blank" rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 rounded-[12px] transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)', color: '#fff', fontWeight: 800, fontSize: '0.8rem', height: 44, boxShadow: '0 6px 20px rgba(124,58,237,0.4)' }}
-            onClick={e => e.stopPropagation()}
+            style={{ background: 'linear-gradient(135deg, #0ea5e9, #0284c7)', color: '#fff', fontWeight: 800, fontSize: '0.8rem', height: 44, boxShadow: '0 6px 20px rgba(14,165,233,0.4)' }}
+            onClick={e => {
+              e.stopPropagation()
+              fetch('/api/booking-click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ venueId: venue.id, venueName: venue.name, platform: 'resortpass', city: venue.city ?? 'austin' }) }).catch(() => {})
+            }}
           >
-            Reserve on {venue.bookingPlatform === 'resy' ? 'Resy' : venue.bookingPlatform === 'opentable' ? 'OpenTable' : 'SevenRooms'}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 17L17 7"/><path d="M7 7h10v10"/>
-            </svg>
+            🏊 Book Day Pass on ResortPass
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
           </a>
         )}
       </div>
 
-      {/* ── Heart button — always bottom-right above content ── */}
-      <button
-        className="absolute z-20 transition-all active:scale-90"
-        style={{
-          bottom: venue.bookingPlatform ? 76 : 20,
-          right: 20,
-          width: 44, height: 44, borderRadius: '50%',
-          background: 'rgba(236,72,153,0.2)',
-          border: '1.5px solid rgba(236,72,153,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EC4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg>
-      </button>
+
     </div>
   )
 }
