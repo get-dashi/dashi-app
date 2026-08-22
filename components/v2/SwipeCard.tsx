@@ -68,13 +68,16 @@ export function V2SwipeCard({ venue, position, style, onRef }: SwipeCardProps) {
       style={{
         // Fill the entire container — consistent height for every card
         inset: 0,
-        borderRadius: 28,
-        overflow: 'hidden',
+        // clip-path instead of overflow:hidden+borderRadius — avoids iOS WKWebView
+        // compositing bug where border-radius repaints during GPU transforms
+        clipPath: 'inset(0 round 28px)',
+        WebkitClipPath: 'inset(0 round 28px)',
         boxShadow: '0 24px 72px rgba(0,0,0,0.75)',
         transformOrigin: 'bottom center',
         transition: 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)',
-        willChange: 'transform',          // promote to GPU layer — kills repaint glitch
-        backfaceVisibility: 'hidden',     // extra compositing hint
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
         cursor: position === 'top' ? 'grab' : 'default',
         ...positionStyles[position],
         ...style,
@@ -87,7 +90,7 @@ export function V2SwipeCard({ venue, position, style, onRef }: SwipeCardProps) {
         fill
         className="object-cover pointer-events-none"
         sizes="390px"
-        priority={position === 'top'}
+        priority={position === 'top' || position === 'second'}
         unoptimized={imgSrc.includes('googleapis.com')}
       />
 

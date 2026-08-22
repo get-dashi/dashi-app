@@ -54,6 +54,17 @@ export function V2CardStack({ venues, onLike, onPass, onEmpty, persistKey }: Car
     }
   }, [venues])
 
+  // Eagerly preload next 4 card images so there's never a load flash mid-swipe
+  useEffect(() => {
+    const toPreload = venues.slice(currentIndex + 1, currentIndex + 5)
+    toPreload.forEach(v => {
+      if (v.img && !v.img.includes('googleapis.com')) {
+        const img = new window.Image()
+        img.src = v.img
+      }
+    })
+  }, [currentIndex, venues])
+
   // ── Pure DOM mutations — no setState ─────────────────────────────────────
   const applyTransform = useCallback((dx: number) => {
     const el = cardRef.current
