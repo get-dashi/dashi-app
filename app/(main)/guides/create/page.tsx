@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUserLists } from '@/contexts/UserListsContext'
 
 const CATEGORIES = ['Bars & Nightlife', 'Restaurants', 'Date Night', 'Brunch', 'Live Music', 'Rooftops', 'Coffee & Cafes', 'Hidden Gems', 'Sushi & Japanese', 'Taco Spots']
 const COVER_OPTIONS = [
@@ -14,6 +15,7 @@ type Visibility = 'private' | 'shared' | 'published'
 
 export default function CreateGuidePage() {
   const router = useRouter()
+  const { createList } = useUserLists()
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
   const [category, setCategory] = useState('Bars & Nightlife')
@@ -21,7 +23,19 @@ export default function CreateGuidePage() {
   const [coverImg, setCoverImg] = useState(COVER_OPTIONS[0])
   const [showCoverPicker, setShowCoverPicker] = useState(false)
   const [showCatPicker, setShowCatPicker] = useState(false)
-  const placesAdded = 12
+  const placesAdded = 0
+
+  function handlePublish() {
+    if (!name.trim()) return
+    const list = createList(name.trim(), [], {
+      emoji: category === 'Rooftops' ? '🏙️' : category === 'Brunch' ? '🥂' : category === 'Coffee & Cafes' ? '☕' : category === 'Date Night' ? '❤️' : '🌃',
+      description: desc,
+      category,
+      coverImg,
+      published: visibility === 'published',
+    })
+    router.push(`/guides/${list.id}`)
+  }
 
   const canPublish = name.trim().length > 0
 
@@ -173,7 +187,7 @@ export default function CreateGuidePage() {
       <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: '1px solid #25252B' }}>
         <button
           disabled={!canPublish}
-          onClick={() => router.push('/guides/austin-rooftops')}
+          onClick={handlePublish}
           className="w-full rounded-[14px] transition-all active:scale-[0.98]"
           style={{
             height: 54,

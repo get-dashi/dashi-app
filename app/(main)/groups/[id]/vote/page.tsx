@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 const VOTE_OPTIONS = [
   { id: 'loro',      name: 'Loro',  sub: 'Asian Smokehouse', rating: '4.7', reviews: '2,348', price: '$$',   area: 'Downtown',     dist: '1.2 mi', img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=120&q=75' },
@@ -14,6 +14,8 @@ type VoteChoice = 'love' | 'maybe' | 'skip'
 
 export default function VotePage() {
   const router = useRouter()
+  const params = useParams()
+  const groupId = params?.id as string ?? 'group'
   const [votes, setVotes] = useState<Record<string, VoteChoice>>({})
 
   const vote = (id: string, choice: VoteChoice) => {
@@ -154,7 +156,7 @@ export default function VotePage() {
         </div>
 
         <button
-          onClick={() => router.push('/groups/weekend-crew/match')}
+          onClick={() => router.push(`/groups/${groupId}/match`)}
           disabled={!allVoted}
           className="w-full rounded-[14px] transition-all active:scale-[0.98]"
           style={{

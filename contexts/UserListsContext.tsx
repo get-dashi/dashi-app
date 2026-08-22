@@ -10,11 +10,14 @@ export interface UserList {
   published?: boolean
   publishedAt?: number
   emoji?: string
+  description?: string
+  category?: string
+  coverImg?: string
 }
 
 interface UserListsContextType {
   userLists: UserList[]
-  createList: (name: string, venueIds: string[], opts?: { sourceListId?: string; emoji?: string }) => UserList
+  createList: (name: string, venueIds: string[], opts?: { sourceListId?: string; emoji?: string; description?: string; category?: string; coverImg?: string; published?: boolean }) => UserList
   deleteList: (id: string) => void
   addVenueToList: (listId: string, venueId: string) => void
   removeVenueFromList: (listId: string, venueId: string) => void
@@ -33,8 +36,8 @@ export function UserListsProvider({ children }: { children: ReactNode }) {
     try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
   })
 
-  const createList = useCallback((name: string, venueIds: string[], opts?: { sourceListId?: string; emoji?: string }): UserList => {
-    const list: UserList = { id: `ul_${Date.now()}`, name, venueIds, createdAt: Date.now(), sourceListId: opts?.sourceListId, emoji: opts?.emoji }
+  const createList = useCallback((name: string, venueIds: string[], opts?: { sourceListId?: string; emoji?: string; description?: string; category?: string; coverImg?: string; published?: boolean }): UserList => {
+    const list: UserList = { id: `ul_${Date.now()}`, name, venueIds, createdAt: Date.now(), sourceListId: opts?.sourceListId, emoji: opts?.emoji, description: opts?.description, category: opts?.category, coverImg: opts?.coverImg, published: opts?.published }
     setUserLists(prev => { const next = [...prev, list]; localStorage.setItem(LS_KEY, JSON.stringify(next)); return next })
     return list
   }, [])

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 function Confetti() {
   const [particles] = useState(() => {
@@ -49,6 +49,8 @@ const TIMELINE = [
 
 export default function MatchPage() {
   const router = useRouter()
+  const params = useParams()
+  const groupId = params?.id as string ?? 'group'
   const [revealed, setRevealed] = useState(false)
 
   useEffect(() => {
@@ -161,7 +163,7 @@ export default function MatchPage() {
           Approve Plan
         </button>
         <button
-          onClick={() => router.push('/groups/weekend-crew/plan')}
+          onClick={() => router.push(`/groups/${groupId}/plan`)}
           style={{ height: 46, background: 'none', border: '1px solid #25252B', borderRadius: 14, color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
         >
           Edit Plan

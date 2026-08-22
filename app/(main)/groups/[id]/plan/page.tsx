@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -87,6 +87,8 @@ const TIMELINE_STOPS = [
 
 export default function PlanPage() {
   const router = useRouter()
+  const params = useParams()
+  const groupId = params?.id as string ?? 'group'
   const [step, setStep] = useState<Step>(1)
   const [prefs, setPrefs] = useState<Record<string, string>>(
     Object.fromEntries(PREF_ROWS.map(r => [r.key, r.defaultVal]))
@@ -97,7 +99,7 @@ export default function PlanPage() {
 
   const nextStep = () => {
     if (step < 4) setStep((step + 1) as Step)
-    if (step === 2) router.push('/groups/weekend-crew/vote')
+    if (step === 2) router.push(`/groups/${groupId}/vote`)
   }
 
   return (
@@ -212,7 +214,7 @@ export default function PlanPage() {
                 </div>
               ))}
             </div>
-            <button onClick={() => router.push('/groups/weekend-crew/vote')} style={{ marginTop: 16, fontSize: '0.8rem', color: '#EC4899', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => router.push(`/groups/${groupId}/vote`)} style={{ marginTop: 16, fontSize: '0.8rem', color: '#EC4899', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
               Preview venue options →
             </button>
           </div>
@@ -293,7 +295,7 @@ export default function PlanPage() {
           </div>
         )}
         {step === 4 && (
-          <button onClick={() => router.push('/groups/weekend-crew/match')} className="w-full rounded-[14px] transition-all active:scale-[0.98]" style={{ height: 54, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', color: '#fff', fontSize: '0.95rem', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
+          <button onClick={() => router.push(`/groups/${groupId}/match`)} className="w-full rounded-[14px] transition-all active:scale-[0.98]" style={{ height: 54, background: 'linear-gradient(135deg, #7C3AED, #EC4899)', color: '#fff', fontSize: '0.95rem', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
             Share with Group 🎉
           </button>
         )}

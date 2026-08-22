@@ -310,14 +310,42 @@ export default function GuidesPage() {
                   })}
                 </div>
 
+                {/* Guide templates */}
+                <div style={{ marginTop: 20 }}>
+                  <p style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>Start from a template</p>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      { emoji: '🏙️', name: 'Best Rooftops in Austin',   category: 'Rooftops',        desc: 'The best rooftop bars for sunsets and good vibes' },
+                      { emoji: '🍷', name: 'Date Night Done Right',       category: 'Date Night',      desc: 'Romantic spots perfect for a special night out' },
+                      { emoji: '🍖', name: 'Austin BBQ Trail',             category: 'Restaurants',     desc: 'From Franklin to La Barbecue — the definitive list' },
+                      { emoji: '🍹', name: 'Best Cocktail Bars',           category: 'Bars & Nightlife',desc: 'Craft cocktails and creative menus across Austin' },
+                      { emoji: '☕',  name: 'Coffee & Work Spots',          category: 'Coffee & Cafes',  desc: 'Best cafes to get work done or catch up with friends' },
+                      { emoji: '🌮', name: 'Taco Tour ATX',               category: 'Restaurants',     desc: 'From breakfast tacos to late-night street tacos' },
+                    ].map(t => (
+                      <button key={t.name}
+                        onClick={() => { createList(t.name, [], { emoji: t.emoji, description: t.desc, category: t.category }); }}
+                        className="flex items-center gap-3 rounded-[14px] px-3.5 py-3 transition-all active:scale-[0.98] text-left w-full"
+                        style={{ background: '#151518', border: '1px solid #25252B', cursor: 'pointer' }}
+                      >
+                        <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{t.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <p style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</p>
+                          <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{t.category}</p>
+                        </div>
+                        <div style={{ flexShrink: 0, background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 8, padding: '4px 10px', fontSize: '0.62rem', fontWeight: 800, color: '#c4b5fd' }}>Use</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Create new blank guide */}
                 <button
-                  onClick={() => { setAddTarget(null); setPickingList(true) }}
+                  onClick={() => router.push('/guides/create')}
                   className="w-full flex items-center justify-center gap-2 rounded-[14px] py-3.5 mt-4 transition-all active:scale-[0.98]"
                   style={{ background: 'rgba(124,58,237,0.1)', border: '1px dashed rgba(124,58,237,0.35)', cursor: 'pointer' }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.8)" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(168,85,247,0.8)' }}>Create new guide</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(168,85,247,0.8)' }}>Create blank guide</span>
                 </button>
               </>
             )}
